@@ -42,7 +42,7 @@ func (p *Piece) AvailablePositions(cur Pos) map[Pos]struct{} {
 		avail[Pos{cur.X - 1, cur.Y + 2}] = struct{}{}
 		avail[Pos{cur.X + 1, cur.Y - 2}] = struct{}{}
 		avail[Pos{cur.X - 1, cur.Y - 2}] = struct{}{}
-	case p.Name == Bishop || p.Name == Queen:
+	case p.Name == Bishop || p.Name == Queen: // fallthrough is not correct.
 		for x, y := cur.X, cur.Y; x < 8 && y < 8; x, y = x+1, y+1 {
 			avail[Pos{x, y}] = struct{}{}
 		}
@@ -56,7 +56,7 @@ func (p *Piece) AvailablePositions(cur Pos) map[Pos]struct{} {
 			avail[Pos{x, y}] = struct{}{}
 		}
 		fallthrough
-	case p.Name == Rook || p.Name == Queen:
+	case p.Name == Rook || p.Name == Queen: // fallthrough is not correct.
 		for x := cur.X; x < 8; x++ {
 			avail[Pos{x, cur.Y}] = struct{}{}
 		}
@@ -149,12 +149,12 @@ func main() {
 	b := NewBoard()
 	b.Print()
 
-	piece, found := b.Pieces[Pos{3, 0}]
+	piece, found := b.Pieces[Pos{2, 0}]
 	if !found {
 		log.Fatalln("no bishop found")
 	}
 	// b.Move[Pos{2, 7}]
-	fmt.Println(piece.AvailablePositions(Pos{3, 0}))
+	fmt.Println(piece.AvailablePositions(Pos{2, 0}))
 }
 
 // func FourMoveCheckmate(b *Board) {
