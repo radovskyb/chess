@@ -115,7 +115,7 @@ func (b *Board) Move(p1, p2 Pos) error {
 
 	// Get a list of all possible move positions that the
 	// piece can move to without restrictions.
-	positions := getMovePositions(piece.Name, p1)
+	positions := getMovePositions(piece, p1)
 	if _, ok := positions[p2]; !ok {
 		return ErrInvalidPieceMove
 	}

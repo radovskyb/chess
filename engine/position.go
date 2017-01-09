@@ -73,11 +73,23 @@ func linePositions(cur Pos) map[Pos]struct{} {
 
 // getMovePositions returns a map of all possible positions that the
 // specified piece could move to with no restrictions in place.
-func getMovePositions(name PieceName, cur Pos) map[Pos]struct{} {
+func getMovePositions(piece *Piece, cur Pos) map[Pos]struct{} {
 	pos := make(map[Pos]struct{})
-	switch name {
+
+	switch piece.Name {
 	case Pawn:
-		pos[Pos{cur.X, cur.Y + 1}] = struct{}{}
+		switch piece.Color {
+		case Black:
+			if cur.Y == 6 {
+				pos[Pos{cur.X, cur.Y - 2}] = struct{}{}
+			}
+			pos[Pos{cur.X, cur.Y - 1}] = struct{}{}
+		case White:
+			if cur.Y == 1 {
+				pos[Pos{cur.X, cur.Y + 2}] = struct{}{}
+			}
+			pos[Pos{cur.X, cur.Y + 1}] = struct{}{}
+		}
 	case Knight:
 		pos[Pos{cur.X + 2, cur.Y + 1}] = struct{}{}
 		pos[Pos{cur.X - 2, cur.Y + 1}] = struct{}{}
@@ -101,6 +113,10 @@ func getMovePositions(name PieceName, cur Pos) map[Pos]struct{} {
 		pos[Pos{cur.X - 1, cur.Y}] = struct{}{}
 		pos[Pos{cur.X, cur.Y + 1}] = struct{}{}
 		pos[Pos{cur.X, cur.Y - 1}] = struct{}{}
+		pos[Pos{cur.X + 1, cur.Y + 1}] = struct{}{}
+		pos[Pos{cur.X + 1, cur.Y - 1}] = struct{}{}
+		pos[Pos{cur.X - 1, cur.Y + 1}] = struct{}{}
+		pos[Pos{cur.X - 1, cur.Y - 1}] = struct{}{}
 	}
 	return pos
 }
