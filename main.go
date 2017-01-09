@@ -24,11 +24,7 @@ func main() {
 			continue
 		}
 		if err := b.MoveByLocation(locations[0], locations[1]); err != nil {
-			if err == engine.ErrOpponentsPiece {
-				fmt.Println("it's not your turn.")
-			} else {
-				fmt.Println(err)
-			}
+			fmt.Println(err)
 			continue
 		}
 		b.Print()

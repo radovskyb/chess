@@ -9,6 +9,8 @@ var (
 	ErrInvalidLocation   = errors.New("error: location string is invalid")
 	ErrNoPieceAtPosition = errors.New("error: no piece at specified position")
 	ErrOpponentsPiece    = errors.New("error: piece belongs to opponent")
+	ErrInvalidPieceMove  = errors.New("error: invalid move for piece")
+	ErrOccupiedPosition  = errors.New("error: position is already occupied")
 )
 
 type Color uint8
@@ -100,17 +102,39 @@ func (b *Board) MoveByLocation(loc1, loc2 string) error {
 }
 
 func (b *Board) Move(p1, p2 Pos) error {
+	// Get the piece at position p1.
 	piece, found := b.posToPiece[p1]
 	if !found {
 		return ErrNoPieceAtPosition
 	}
+
+	// Check that it's that piece's color's turn.
 	if piece.Color != b.Turn {
 		return ErrOpponentsPiece
 	}
-	b.posToPiece[p2] = piece // add to new pos
-	// b.pieceToPos[piece] = p2 // update pieceToPos
-	delete(b.posToPiece, p1) // delete piece at old pos
 
-	b.Turn ^= 1 // update who's turn it is.
+	// Get a list of all possible move positions that the
+	// piece can move to without restrictions.
+	positions := getMovePositions(piece.Name, p1)
+	if _, ok := positions[p2]; !ok {
+		return ErrInvalidPieceMove
+	}
+
+	// Check to see if there's already a piece at position p2.
+	piece2, found := b.posToPiece[p2]
+	if found {
+		if piece.Color == piece2.Color {
+			return ErrOccupiedPosition
+		}
+	}
+
+	// Move the piece to the new position.
+	b.posToPiece[p2] = piece
+
+	// Remove the piece from the old position.
+	delete(b.posToPiece, p1)
+
+	// Update who's turn it is.
+	b.Turn ^= 1
 	return nil
 }
