@@ -8,6 +8,7 @@ import (
 var (
 	ErrInvalidLocation   = errors.New("error: location string is invalid")
 	ErrNoPieceAtPosition = errors.New("error: no piece at specified position")
+	ErrOpponentsPiece    = errors.New("error: piece belongs to opponent")
 )
 
 type Color uint8
@@ -53,7 +54,7 @@ func NewBoard() *Board {
 	// 	pieceToPos[v] = k
 	// }
 	// return &Board{posToPiece: posToPiece, pieceToPos: pieceToPos}
-	return &Board{posToPiece: posToPiece}
+	return &Board{Turn: White, posToPiece: posToPiece}
 }
 
 func (b *Board) Print() {
@@ -86,13 +87,30 @@ func (b *Board) GetPieceAt(loc string) (*Piece, error) {
 	return piece, nil
 }
 
+func (b *Board) MoveByLocation(loc1, loc2 string) error {
+	pos1, err := locToPos(loc1)
+	if err != nil {
+		return err
+	}
+	pos2, err := locToPos(loc2)
+	if err != nil {
+		return err
+	}
+	return b.Move(pos1, pos2)
+}
+
 func (b *Board) Move(p1, p2 Pos) error {
 	piece, found := b.posToPiece[p1]
 	if !found {
 		return ErrNoPieceAtPosition
 	}
+	if piece.Color != b.Turn {
+		return ErrOpponentsPiece
+	}
 	b.posToPiece[p2] = piece // add to new pos
 	// b.pieceToPos[piece] = p2 // update pieceToPos
 	delete(b.posToPiece, p1) // delete piece at old pos
+
+	b.Turn ^= 1 // update who's turn it is.
 	return nil
 }

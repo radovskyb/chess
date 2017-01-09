@@ -6,11 +6,11 @@ type Pos struct {
 	X, Y int
 }
 
-var letterToXY = map[string]int{
-	// x position
+var letterToX = map[string]int{
 	"a": 0, "b": 1, "c": 2, "d": 3,
 	"e": 4, "f": 5, "g": 6, "h": 7,
-	// y position
+}
+var letterToY = map[string]int{
 	"1": 0, "2": 1, "3": 2, "4": 3,
 	"5": 4, "6": 5, "7": 6, "8": 7,
 }
@@ -25,8 +25,8 @@ func locToPos(loc string) (Pos, error) {
 	if len(loc) != 2 {
 		return Pos{}, ErrInvalidLocation
 	}
-	x, foundX := letterToXY[string(loc[0])]
-	y, foundY := letterToXY[string(loc[1])]
+	x, foundX := letterToX[string(loc[0])]
+	y, foundY := letterToY[string(loc[1])]
 	if !(foundX && foundY) {
 		return Pos{}, ErrInvalidLocation
 	}
