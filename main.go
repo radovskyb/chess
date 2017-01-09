@@ -14,7 +14,8 @@ func main() {
 	b := engine.NewBoard()
 	b.Print()
 
-	// engine.FourMoveCheckmate(b)
+	// engine.FourMoveCheckmate(b) // play a four move checkmate animation.
+
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		locations := strings.Split(strings.TrimSpace(scanner.Text()), " ")
@@ -23,7 +24,11 @@ func main() {
 			continue
 		}
 		if err := b.MoveByLocation(locations[0], locations[1]); err != nil {
-			fmt.Println(err)
+			if err == engine.ErrOpponentsPiece {
+				fmt.Println("it's not your turn.")
+			} else {
+				fmt.Println(err)
+			}
 			continue
 		}
 		b.Print()
