@@ -11,6 +11,7 @@ var (
 	ErrOpponentsPiece    = errors.New("error: piece belongs to opponent")
 	ErrInvalidPieceMove  = errors.New("error: invalid move for piece")
 	ErrOccupiedPosition  = errors.New("error: position is already occupied")
+	ErrMoveBlocked       = errors.New("error: move is blocked by another piece")
 )
 
 type Color uint8
@@ -23,7 +24,6 @@ const (
 type Board struct {
 	Turn       Color
 	posToPiece map[Pos]*Piece
-	// pieceToPos map[*Piece]Pos
 }
 
 func NewBoard() *Board {
@@ -51,11 +51,6 @@ func NewBoard() *Board {
 		posToPiece[Pos{i, 1}] = &Piece{Pawn, White}
 		posToPiece[Pos{i, 6}] = &Piece{Pawn, Black}
 	}
-	// pieceToPos := make(map[*Piece]Pos)
-	// for k, v := range posToPiece {
-	// 	pieceToPos[v] = k
-	// }
-	// return &Board{posToPiece: posToPiece, pieceToPos: pieceToPos}
 	return &Board{Turn: White, posToPiece: posToPiece}
 }
 
@@ -113,19 +108,9 @@ func (b *Board) Move(p1, p2 Pos) error {
 		return ErrOpponentsPiece
 	}
 
-	// Get a list of all possible move positions that the
-	// piece can move to without restrictions.
-	positions := getMovePositions(piece, p1)
-	if _, ok := positions[p2]; !ok {
-		return ErrInvalidPieceMove
-	}
-
-	// Check to see if there's already a piece at position p2.
-	piece2, found := b.posToPiece[p2]
-	if found {
-		if piece.Color == piece2.Color {
-			return ErrOccupiedPosition
-		}
+	// Check if the move is legal to make.
+	if err := b.moveLegal(piece, p1, p2); err != nil {
+		return err
 	}
 
 	// Move the piece to the new position.
@@ -136,5 +121,74 @@ func (b *Board) Move(p1, p2 Pos) error {
 
 	// Update who's turn it is.
 	b.Turn ^= 1
+
 	return nil
+}
+
+// moveLegal checks to see whether the specified move is legal to make or not.
+func (b *Board) moveLegal(piece *Piece, p1, p2 Pos) error {
+	// Get a list of all possible move positions that the
+	// piece can move to without restrictions.
+	//
+	// TODO: Work out to check diagonal squares for pawns to take pieces.
+	positions := getMovePositions(piece, p1)
+	if _, ok := positions[p2]; !ok {
+		return ErrInvalidPieceMove
+	}
+
+	// Check if there's a piece at position p2.
+	//
+	// TODO: Check King check line of sight.
+	piece2, found := b.posToPiece[p2]
+
+	// Check if piece2 is on the same team as piece.
+	if found && piece.Color == piece2.Color {
+		return ErrOccupiedPosition
+	}
+
+	// Check if the move from p1 to p2 is blocked by any other pieces.
+	if b.moveBlocked(piece, p1, p2) {
+		return ErrMoveBlocked
+	}
+
+	return nil
+}
+
+func (b *Board) moveBlocked(piece *Piece, p1, p2 Pos) bool {
+	yd := 1
+	if p1.Y > p2.Y {
+		yd = -1
+	}
+	xd := 1
+	if p1.X > p2.X {
+		xd = -1
+	}
+	switch piece.Name {
+	case Pawn:
+		d := 1
+		if piece.Color == Black {
+			d = -1
+		}
+		if _, blocked := b.posToPiece[Pos{p1.X, p1.Y + (1 * d)}]; blocked {
+			return true
+		}
+	case Rook:
+		switch {
+		case p1.Y != p2.Y:
+			for y := p1.Y + (1 * yd); y != p2.Y; y = y + (1 * yd) {
+				_, blocked := b.posToPiece[Pos{p2.X, y}]
+				if blocked {
+					return true
+				}
+			}
+		case p1.X != p2.X:
+			for x := p1.X + (1 * xd); x != p2.X; x = x + (1 * xd) {
+				_, blocked := b.posToPiece[Pos{x, p2.Y}]
+				if blocked {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
