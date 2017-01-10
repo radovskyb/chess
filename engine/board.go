@@ -68,7 +68,7 @@ func (b *Board) Print() {
 	}
 }
 
-// GetPieceAt either returns a piece located at the string location.
+// GetPieceAt returns the piece located at the string location.
 //
 // If there's no piece at the specified location, or the location is invalid,
 // an error is returned.
@@ -104,6 +104,9 @@ func (b *Board) Move(p1, p2 Pos) error {
 	}
 
 	// Check that it's that piece's color's turn.
+	//
+	// TODO: Move to higher logic so Move can be forcefully used?
+	// For example, create a MakeMove method that calls move.
 	if piece.Color != b.Turn {
 		return ErrOpponentsPiece
 	}
