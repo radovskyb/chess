@@ -114,6 +114,35 @@ func TestMove(t *testing.T) {
 		p1, p2 Pos
 		name   PieceName
 	}{
+		{Pos{0, 0}, Pos{0, 1}, Rook},
+		{Pos{1, 0}, Pos{1, 1}, Knight},
+		{Pos{2, 0}, Pos{2, 1}, Bishop},
+		{Pos{3, 0}, Pos{3, 1}, Queen},
+		{Pos{4, 0}, Pos{4, 1}, King},
+	}
+	for _, tc := range testCases {
+		piece, found := b.posToPiece[tc.p1]
+		if !found {
+			t.Errorf("expected to find piece %v at pos %v", tc.name, tc.p1)
+		}
+		b.move(piece, tc.p1, tc.p2)
+		piece, found = b.posToPiece[tc.p2]
+		if !found {
+			t.Errorf("expected to find piece %v at pos %v", tc.name, tc.p2)
+		}
+		if piece.Name != tc.name {
+			t.Errorf("expected piece to be %v, got %v", tc.name, piece.Name)
+		}
+	}
+}
+
+func TestMakeMove(t *testing.T) {
+	b := NewBoard()
+
+	testCases := []struct {
+		p1, p2 Pos
+		name   PieceName
+	}{
 		{Pos{0, 1}, Pos{0, 3}, Pawn},
 		{Pos{0, 6}, Pos{0, 4}, Pawn},
 		{Pos{0, 0}, Pos{0, 2}, Rook},
@@ -122,7 +151,7 @@ func TestMove(t *testing.T) {
 		{Pos{1, 7}, Pos{2, 5}, Knight},
 	}
 	for _, tc := range testCases {
-		if err := b.Move(tc.p1, tc.p2); err != nil {
+		if err := b.MakeMove(tc.p1, tc.p2); err != nil {
 			t.Error(err)
 		}
 		piece, found := b.posToPiece[tc.p2]

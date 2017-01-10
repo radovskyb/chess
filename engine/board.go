@@ -93,10 +93,18 @@ func (b *Board) MoveByLocation(loc1, loc2 string) error {
 	if err != nil {
 		return err
 	}
-	return b.Move(pos1, pos2)
+	return b.MakeMove(pos1, pos2)
 }
 
-func (b *Board) Move(p1, p2 Pos) error {
+func (b *Board) move(piece *Piece, p1, p2 Pos) {
+	// Move the piece to the new position.
+	b.posToPiece[p2] = piece
+
+	// Remove the piece from the old position.
+	delete(b.posToPiece, p1)
+}
+
+func (b *Board) MakeMove(p1, p2 Pos) error {
 	// Get the piece at position p1.
 	piece, found := b.posToPiece[p1]
 	if !found {
@@ -104,9 +112,6 @@ func (b *Board) Move(p1, p2 Pos) error {
 	}
 
 	// Check that it's that piece's color's turn.
-	//
-	// TODO: Move to higher logic so Move can be forcefully used?
-	// For example, create a MakeMove method that calls move.
 	if piece.Color != b.Turn {
 		return ErrOpponentsPiece
 	}
@@ -116,11 +121,8 @@ func (b *Board) Move(p1, p2 Pos) error {
 		return err
 	}
 
-	// Move the piece to the new position.
-	b.posToPiece[p2] = piece
-
-	// Remove the piece from the old position.
-	delete(b.posToPiece, p1)
+	// Move the piece on the board.
+	b.move(piece, p1, p2)
 
 	// Update who's turn it is.
 	b.Turn ^= 1
