@@ -1,6 +1,6 @@
 package engine
 
-import "fmt"
+import "github.com/fatih/color"
 
 type PieceName uint8
 
@@ -24,18 +24,15 @@ type Piece struct {
 }
 
 func (p *Piece) String() string {
-	var color string
-	switch p.Color {
-	case Black:
-		color = "b"
-	case White:
-		color = "w"
-	default:
-		return "invalid color"
-	}
 	name, found := pieceNames[p.Name]
 	if !found {
 		return "invalid piece name"
 	}
-	return fmt.Sprintf("%2s%s", color, name)
+	switch p.Color {
+	case Black:
+		return color.BlackString(" %s ", name)
+	case White:
+		return color.WhiteString(" %s ", name)
+	}
+	return "invalid color"
 }

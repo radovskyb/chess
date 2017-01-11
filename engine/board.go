@@ -3,6 +3,8 @@ package engine
 import (
 	"errors"
 	"fmt"
+
+	"github.com/fatih/color"
 )
 
 var (
@@ -54,18 +56,33 @@ func NewBoard() *Board {
 	return &Board{Turn: White, posToPiece: posToPiece}
 }
 
+var (
+	printBlueBg = color.New(color.BgBlue).PrintfFunc()
+	printCyanBg = color.New(color.BgCyan).PrintfFunc()
+)
+
 func (b *Board) Print() {
 	fmt.Print("\033[H\033[2J\n")
 	for i1 := 0; i1 < 8; i1++ {
+		fmt.Print(color.RedString(" %d ", 8-i1))
 		for i2 := 0; i2 < 8; i2++ {
 			if piece, found := b.posToPiece[Pos{i2, 7 - i1}]; found {
-				fmt.Printf("%s", piece)
+				if i2%2 == i1%2 {
+					printBlueBg("%s", piece)
+				} else {
+					printCyanBg("%s", piece)
+				}
 				continue
 			}
-			fmt.Printf("%3s", "--")
+			if i2%2 == i1%2 {
+				printBlueBg("%3s", "")
+			} else {
+				printCyanBg("%3s", "")
+			}
 		}
 		fmt.Println()
 	}
+	color.Red("%26s", "A  B  C  D  E  F  G  H")
 }
 
 // GetPieceAt returns the piece located at the string location.
