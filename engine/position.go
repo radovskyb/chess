@@ -37,16 +37,16 @@ func locToPos(loc string) (Pos, error) {
 // from the specified current position.
 func diagPositions(cur Pos) map[Pos]struct{} {
 	pos := make(map[Pos]struct{})
-	for x, y := cur.X, cur.Y; x < 8 && y < 8; x, y = x+1, y+1 {
+	for x, y := cur.X+1, cur.Y+1; x < 8 && y < 8; x, y = x+1, y+1 {
 		pos[Pos{x, y}] = struct{}{}
 	}
-	for x, y := cur.X, cur.Y; x >= 0 && y < 8; x, y = x-1, y+1 {
+	for x, y := cur.X-1, cur.Y+1; x >= 0 && y < 8; x, y = x-1, y+1 {
 		pos[Pos{x, y}] = struct{}{}
 	}
-	for x, y := cur.X, cur.Y; x < 8 && y >= 0; x, y = x+1, y-1 {
+	for x, y := cur.X+1, cur.Y-1; x < 8 && y >= 0; x, y = x+1, y-1 {
 		pos[Pos{x, y}] = struct{}{}
 	}
-	for x, y := cur.X, cur.Y; x >= 0 && y >= 0; x, y = x-1, y-1 {
+	for x, y := cur.X-1, cur.Y-1; x >= 0 && y >= 0; x, y = x-1, y-1 {
 		pos[Pos{x, y}] = struct{}{}
 	}
 	return pos
@@ -56,16 +56,16 @@ func diagPositions(cur Pos) map[Pos]struct{} {
 // from the specified current position.
 func linePositions(cur Pos) map[Pos]struct{} {
 	pos := make(map[Pos]struct{})
-	for x := cur.X; x < 8; x++ {
+	for x := cur.X + 1; x < 8; x++ {
 		pos[Pos{x, cur.Y}] = struct{}{}
 	}
-	for x := cur.X; x >= 0; x-- {
+	for x := cur.X - 1; x >= 0; x-- {
 		pos[Pos{x, cur.Y}] = struct{}{}
 	}
-	for y := cur.Y; y < 8; y++ {
+	for y := cur.Y + 1; y < 8; y++ {
 		pos[Pos{cur.X, y}] = struct{}{}
 	}
-	for y := cur.Y; y >= 0; y-- {
+	for y := cur.Y - 1; y >= 0; y-- {
 		pos[Pos{cur.X, y}] = struct{}{}
 	}
 	return pos
