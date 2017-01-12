@@ -1,36 +1,22 @@
 package engine
 
-import "strings"
-
 type Pos struct {
 	X, Y int
 }
 
-var letterToX = map[string]int{
-	"a": 0, "b": 1, "c": 2, "d": 3,
-	"e": 4, "f": 5, "g": 6, "h": 7,
-}
-var letterToY = map[string]int{
-	"1": 0, "2": 1, "3": 2, "4": 3,
-	"5": 4, "6": 5, "7": 6, "8": 7,
-}
-
 // locToPos turns a location string into a Pos object.
 // If the location is invalid, an error is returned and an empty Pos object is returned.
-//
-// Since the empty Pos is still a valid position (x: 0, y: 0), the error must be checked
-// before using Pos after a call to locToPos.
 func locToPos(loc string) (Pos, error) {
-	loc = strings.ToLower(loc)
 	if len(loc) != 2 {
-		return Pos{}, ErrInvalidLocation
+		return Pos{-1, -1}, ErrInvalidLocation
 	}
-	x, foundX := letterToX[string(loc[0])]
-	y, foundY := letterToY[string(loc[1])]
-	if !(foundX && foundY) {
-		return Pos{}, ErrInvalidLocation
+	if !(loc[0] < 'a' || loc[0] > 'h' || loc[1] < '1' || loc[1] > '8') {
+		return Pos{int(loc[0] - 'a'), int(loc[1] - '1')}, nil
 	}
-	return Pos{x, y}, nil
+	if !(loc[0] < 'A' || loc[0] > 'H' || loc[1] < '1' || loc[1] > '8') {
+		return Pos{int(loc[0] - 'A'), int(loc[1] - '1')}, nil
+	}
+	return Pos{-1, -1}, ErrInvalidLocation
 }
 
 // diagPositions returns a map of diagonal move positions starting
