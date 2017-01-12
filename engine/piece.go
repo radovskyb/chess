@@ -14,8 +14,8 @@ const (
 )
 
 var pieceNames = map[PieceName]string{
-	Pawn: "P", Knight: "N", Bishop: "B",
-	Rook: "R", Queen: "Q", King: "K",
+	Pawn: "\u2659", Knight: "\u2658", Bishop: "\u2657",
+	Rook: "\u2656", Queen: "\u2655", King: "\u2654",
 }
 
 type Piece struct {
