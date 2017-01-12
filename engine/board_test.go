@@ -114,35 +114,6 @@ func TestMove(t *testing.T) {
 		p1, p2 Pos
 		name   PieceName
 	}{
-		{Pos{0, 0}, Pos{0, 1}, Rook},
-		{Pos{1, 0}, Pos{1, 1}, Knight},
-		{Pos{2, 0}, Pos{2, 1}, Bishop},
-		{Pos{3, 0}, Pos{3, 1}, Queen},
-		{Pos{4, 0}, Pos{4, 1}, King},
-	}
-	for _, tc := range testCases {
-		piece, found := b.posToPiece[tc.p1]
-		if !found {
-			t.Errorf("expected to find piece %v at pos %v", tc.name, tc.p1)
-		}
-		b.move(piece, tc.p1, tc.p2)
-		piece, found = b.posToPiece[tc.p2]
-		if !found {
-			t.Errorf("expected to find piece %v at pos %v", tc.name, tc.p2)
-		}
-		if piece.Name != tc.name {
-			t.Errorf("expected piece to be %v, got %v", tc.name, piece.Name)
-		}
-	}
-}
-
-func TestMakeMove(t *testing.T) {
-	b := NewBoard()
-
-	testCases := []struct {
-		p1, p2 Pos
-		name   PieceName
-	}{
 		{Pos{0, 1}, Pos{0, 3}, Pawn},
 		{Pos{0, 6}, Pos{0, 4}, Pawn},
 		{Pos{0, 0}, Pos{0, 2}, Rook},
@@ -151,7 +122,7 @@ func TestMakeMove(t *testing.T) {
 		{Pos{1, 7}, Pos{2, 5}, Knight},
 	}
 	for _, tc := range testCases {
-		if err := b.MakeMove(tc.p1, tc.p2); err != nil {
+		if err := b.Move(tc.p1, tc.p2); err != nil {
 			t.Error(err)
 		}
 		piece, found := b.posToPiece[tc.p2]
@@ -193,6 +164,48 @@ func TestMoveLegal(t *testing.T) {
 		}
 		if !tc.legal && err == nil {
 			t.Errorf("expected move from pos %v to pos %v be illegal", tc.p1, tc.p2)
+		}
+	}
+}
+
+func TestMoveBlocked(t *testing.T) {
+	b := NewBoard()
+	b.clear()
+
+	type pieceToPos struct {
+		piece *Piece
+		pos   Pos
+	}
+
+	testCases := []struct {
+		setupMoves  []pieceToPos
+		p1, p2      Pos
+		shouldBlock bool
+	}{
+		{
+			[]pieceToPos{
+				{&Piece{Rook, White}, Pos{4, 3}}, // Rook to 3, 3
+				{&Piece{Pawn, White}, Pos{3, 3}}, // Pawn to 2, 3
+			},
+			Pos{4, 3}, Pos{2, 3},
+			true,
+		},
+	}
+	for _, tc := range testCases {
+		for _, move := range tc.setupMoves {
+			b.posToPiece[move.pos] = move.piece
+		}
+		piece, found := b.posToPiece[tc.p1]
+		if !found {
+			t.Errorf("no piece found at pos %v", tc.p1)
+		}
+		if b.moveBlocked(piece, tc.p1, tc.p2) != tc.shouldBlock {
+			blockOrNot := "block"
+			if !tc.shouldBlock {
+				blockOrNot = "not block"
+			}
+			t.Errorf("expected moving piece %s from %v to %v to %s",
+				piece, tc.p1, tc.p2, blockOrNot)
 		}
 	}
 }

@@ -14,6 +14,7 @@ var (
 	ErrInvalidPieceMove  = errors.New("error: invalid move for piece")
 	ErrOccupiedPosition  = errors.New("error: position is already occupied")
 	ErrMoveBlocked       = errors.New("error: move is blocked by another piece")
+	ErrMovingIntoCheck   = errors.New("error: move puts king in check")
 )
 
 type Color uint8
@@ -26,6 +27,7 @@ const (
 type Board struct {
 	Turn       Color
 	posToPiece map[Pos]*Piece
+	kings      [2]Pos
 }
 
 func NewBoard() *Board {
@@ -53,7 +55,18 @@ func NewBoard() *Board {
 		posToPiece[Pos{i, 1}] = &Piece{Pawn, White}
 		posToPiece[Pos{i, 6}] = &Piece{Pawn, Black}
 	}
-	return &Board{Turn: White, posToPiece: posToPiece}
+	return &Board{
+		Turn:       White,
+		posToPiece: posToPiece,
+		kings:      [2]Pos{White: {4, 0}, Black: {4, 7}},
+	}
+}
+
+// clear removes all pieces from a board and is useful for testing.
+func (b *Board) clear() {
+	for k := range b.posToPiece {
+		delete(b.posToPiece, k)
+	}
 }
 
 var (
@@ -110,18 +123,31 @@ func (b *Board) MoveByLocation(loc1, loc2 string) error {
 	if err != nil {
 		return err
 	}
-	return b.MakeMove(pos1, pos2)
+	return b.Move(pos1, pos2)
 }
 
-func (b *Board) move(piece *Piece, p1, p2 Pos) {
-	// Move the piece to the new position.
-	b.posToPiece[p2] = piece
-
-	// Remove the piece from the old position.
-	delete(b.posToPiece, p1)
+// moveByLocation is a convenience function used for setting up
+// boards for testing by moving pieces by locations and also
+// avoiding any checks for move legality.
+func (b *Board) moveByLocation(loc1, loc2 string) error {
+	pos1, err := locToPos(loc1)
+	if err != nil {
+		return err
+	}
+	pos2, err := locToPos(loc2)
+	if err != nil {
+		return err
+	}
+	piece, found := b.posToPiece[pos1]
+	if !found {
+		return ErrNoPieceAtPosition
+	}
+	b.posToPiece[pos2] = piece
+	delete(b.posToPiece, pos1)
+	return nil
 }
 
-func (b *Board) MakeMove(p1, p2 Pos) error {
+func (b *Board) Move(p1, p2 Pos) error {
 	// Get the piece at position p1.
 	piece, found := b.posToPiece[p1]
 	if !found {
@@ -138,8 +164,18 @@ func (b *Board) MakeMove(p1, p2 Pos) error {
 		return err
 	}
 
-	// Move the piece on the board.
-	b.move(piece, p1, p2)
+	positions2 := getMovePositions(piece, p2)
+	kingPos := b.kings[piece.Color^1]
+	_, found = positions2[kingPos]
+	if found && !b.moveBlocked(piece, p2, kingPos) {
+		fmt.Println("CHECK")
+	}
+
+	// Move the piece to the new position.
+	b.posToPiece[p2] = piece
+
+	// Remove the piece from the old position.
+	delete(b.posToPiece, p1)
 
 	// Update who's turn it is.
 	b.Turn ^= 1
@@ -159,8 +195,6 @@ func (b *Board) moveLegal(piece *Piece, p1, p2 Pos) error {
 	}
 
 	// Check if there's a piece at position p2.
-	//
-	// TODO: Check King check line of sight.
 	piece2, found := b.posToPiece[p2]
 
 	// Check if piece2 is on the same team as piece.
@@ -171,6 +205,23 @@ func (b *Board) moveLegal(piece *Piece, p1, p2 Pos) error {
 	// Check if the move from p1 to p2 is blocked by any other pieces.
 	if b.moveBlocked(piece, p1, p2) {
 		return ErrMoveBlocked
+	}
+
+	// See if move unblocks a path and now puts the king in check.
+	//
+	// Store below type moveBlocked positions at all times something
+	// would be in check in map such as b.blockedChecks[Pos]*Piece.
+
+	// If the piece is a King, see if by moving, it puts itself in check.
+	if piece.Name == King {
+		for pos, piece := range b.posToPiece {
+			piecePositions := getMovePositions(piece, pos)
+			_, checkFound := piecePositions[p2]
+			// if checkFound && !b.moveBlocked(piece, pos, p2) {
+			if checkFound {
+				return ErrMovingIntoCheck
+			}
+		}
 	}
 
 	return nil
@@ -197,19 +248,26 @@ func (b *Board) moveBlocked(piece *Piece, p1, p2 Pos) bool {
 	case Rook:
 		switch {
 		case p1.Y != p2.Y:
-			for y := p1.Y + (1 * yd); y != p2.Y; y = y + (1 * yd) {
+			for y := p1.Y + yd; y != p2.Y; y = y + yd {
 				_, blocked := b.posToPiece[Pos{p2.X, y}]
 				if blocked {
 					return true
 				}
 			}
 		case p1.X != p2.X:
-			for x := p1.X + (1 * xd); x != p2.X; x = x + (1 * xd) {
+			for x := p1.X + xd; x != p2.X; x = x + xd {
 				_, blocked := b.posToPiece[Pos{x, p2.Y}]
 				if blocked {
 					return true
 				}
 			}
+		}
+	case Bishop:
+		for x, y := p1.X+xd, p1.Y+yd; x != p2.X && y != p2.Y; x, y = x+xd, y+yd {
+			// _, blocked := b.posToPiece[Pos{x, p2.Y}]
+			// if blocked {
+			// 	return true
+			// }
 		}
 	}
 	return false

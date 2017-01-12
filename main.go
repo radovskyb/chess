@@ -15,10 +15,7 @@ func main() {
 	b.Print()
 
 	// engine.FourMoveCheckmate(b) // play a four move checkmate animation.
-	// if err := setupBoard1(b); err != nil {
-	// 	log.Fatalln(err)
-	// }
-	// if err := setupBoard2(b); err != nil {
+	// if err := setupBoard3(b); err != nil {
 	// 	log.Fatalln(err)
 	// }
 
@@ -70,6 +67,17 @@ func setupBoard2(b *engine.Board) error {
 	b.MoveByLocation("a8", "a6")
 	b.MoveByLocation("a3", "c3")
 	b.MoveByLocation("c7", "c5")
+	b.Print()
+	return nil
+}
+
+func setupBoard3(b *engine.Board) error {
+	b.MoveByLocation("a2", "a4")
+	b.MoveByLocation("d7", "d5")
+	b.MoveByLocation("a1", "a3")
+	b.MoveByLocation("d5", "d4")
+	b.MoveByLocation("a3", "g3")
+	b.MoveByLocation("d4", "d3")
 	b.Print()
 	return nil
 }
