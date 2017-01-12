@@ -216,6 +216,22 @@ func TestMoveBlocked(t *testing.T) {
 				{Pos{4, 3}, Pos{4, 1}}, // Test blocking down
 			},
 		},
+		// Bishop
+		{
+			[]pieceToPos{
+				{&Piece{Bishop, White}, Pos{3, 3}},
+				{&Piece{Pawn, White}, Pos{4, 4}}, // Pawn up+right.
+				{&Piece{Pawn, White}, Pos{2, 4}}, // Pawn up+left.
+				{&Piece{Pawn, White}, Pos{4, 2}}, // Pawn down+right.
+				{&Piece{Pawn, White}, Pos{2, 2}}, // Pawn down+left.
+			},
+			[][2]Pos{
+				{Pos{3, 3}, Pos{5, 5}}, // Test blocking up+right.
+				{Pos{4, 3}, Pos{1, 5}}, // Test blocking up+left.
+				{Pos{4, 3}, Pos{5, 1}}, // Test blocking down+right.
+				{Pos{4, 3}, Pos{1, 1}}, // Test blocking down+left.
+			},
+		},
 	}
 	for _, tc := range testCases {
 		b.clear() // clear the board
