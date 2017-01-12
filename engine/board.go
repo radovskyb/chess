@@ -242,7 +242,7 @@ func (b *Board) moveBlocked(piece *Piece, p1, p2 Pos) bool {
 		if piece.Color == Black {
 			d = -1
 		}
-		if _, blocked := b.posToPiece[Pos{p1.X, p1.Y + (1 * d)}]; blocked {
+		if _, blocked := b.posToPiece[Pos{p1.X, p1.Y + d}]; blocked {
 			return true
 		}
 	case Rook:

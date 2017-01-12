@@ -178,14 +178,43 @@ func TestMoveBlocked(t *testing.T) {
 
 	testCases := []struct {
 		setupMoves []pieceToPos
-		p1, p2     Pos
+		blockTests [][2]Pos
 	}{
+		// White Pawn
 		{
 			[]pieceToPos{
-				{&Piece{Rook, White}, Pos{4, 3}}, // Rook to 3, 3
-				{&Piece{Pawn, White}, Pos{3, 3}}, // Pawn to 2, 3
+				{&Piece{Pawn, White}, Pos{4, 3}},
+				{&Piece{Pawn, White}, Pos{4, 4}}, // Pawn on top.
 			},
-			Pos{4, 3}, Pos{2, 3},
+			[][2]Pos{
+				{Pos{4, 3}, Pos{4, 5}}, // Test blocking up
+			},
+		},
+		// Black Pawn
+		{
+			[]pieceToPos{
+				{&Piece{Pawn, Black}, Pos{4, 3}},
+				{&Piece{Pawn, Black}, Pos{4, 2}}, // Pawn on bottom.
+			},
+			[][2]Pos{
+				{Pos{4, 3}, Pos{4, 1}}, // Test blocking down
+			},
+		},
+		// Rook
+		{
+			[]pieceToPos{
+				{&Piece{Rook, White}, Pos{4, 3}},
+				{&Piece{Pawn, White}, Pos{3, 3}}, // Pawn on left.
+				{&Piece{Pawn, White}, Pos{5, 3}}, // Pawn on right.
+				{&Piece{Pawn, White}, Pos{4, 4}}, // Pawn on top.
+				{&Piece{Pawn, White}, Pos{4, 2}}, // Pawn on bottom.
+			},
+			[][2]Pos{
+				{Pos{4, 3}, Pos{2, 3}}, // Test blocking left
+				{Pos{4, 3}, Pos{6, 3}}, // Test blocking right
+				{Pos{4, 3}, Pos{4, 6}}, // Test blocking up
+				{Pos{4, 3}, Pos{4, 1}}, // Test blocking down
+			},
 		},
 	}
 	for _, tc := range testCases {
@@ -194,13 +223,15 @@ func TestMoveBlocked(t *testing.T) {
 		for _, move := range tc.setupMoves {
 			b.posToPiece[move.pos] = move.piece
 		}
-		piece, found := b.posToPiece[tc.p1]
-		if !found {
-			t.Errorf("no piece found at pos %v", tc.p1)
-		}
-		if !b.moveBlocked(piece, tc.p1, tc.p2) {
-			t.Errorf("expected moving %s from %v to %v to block",
-				piece, tc.p1, tc.p2)
+		for _, positions := range tc.blockTests {
+			piece, found := b.posToPiece[positions[0]]
+			if !found {
+				t.Errorf("no piece found at pos %v", positions[0])
+			}
+			if !b.moveBlocked(piece, positions[0], positions[1]) {
+				t.Errorf("expected moving %s from %v to %v to block",
+					piece, positions[0], positions[1])
+			}
 		}
 	}
 }
