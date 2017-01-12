@@ -227,9 +227,9 @@ func TestMoveBlocked(t *testing.T) {
 			},
 			[][2]Pos{
 				{Pos{3, 3}, Pos{5, 5}}, // Test blocking up+right.
-				{Pos{4, 3}, Pos{1, 5}}, // Test blocking up+left.
-				{Pos{4, 3}, Pos{5, 1}}, // Test blocking down+right.
-				{Pos{4, 3}, Pos{1, 1}}, // Test blocking down+left.
+				{Pos{3, 3}, Pos{1, 5}}, // Test blocking up+left.
+				{Pos{3, 3}, Pos{5, 1}}, // Test blocking down+right.
+				{Pos{3, 3}, Pos{1, 1}}, // Test blocking down+left.
 			},
 		},
 	}

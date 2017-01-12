@@ -264,10 +264,10 @@ func (b *Board) moveBlocked(piece *Piece, p1, p2 Pos) bool {
 		}
 	case Bishop:
 		for x, y := p1.X+xd, p1.Y+yd; x != p2.X && y != p2.Y; x, y = x+xd, y+yd {
-			// _, blocked := b.posToPiece[Pos{x, p2.Y}]
-			// if blocked {
-			// 	return true
-			// }
+			_, blocked := b.posToPiece[Pos{x, y}]
+			if blocked {
+				return true
+			}
 		}
 	}
 	return false
