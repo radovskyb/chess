@@ -170,7 +170,6 @@ func TestMoveLegal(t *testing.T) {
 
 func TestMoveBlocked(t *testing.T) {
 	b := NewBoard()
-	b.clear()
 
 	type pieceToPos struct {
 		piece *Piece
@@ -178,9 +177,8 @@ func TestMoveBlocked(t *testing.T) {
 	}
 
 	testCases := []struct {
-		setupMoves  []pieceToPos
-		p1, p2      Pos
-		shouldBlock bool
+		setupMoves []pieceToPos
+		p1, p2     Pos
 	}{
 		{
 			[]pieceToPos{
@@ -188,10 +186,11 @@ func TestMoveBlocked(t *testing.T) {
 				{&Piece{Pawn, White}, Pos{3, 3}}, // Pawn to 2, 3
 			},
 			Pos{4, 3}, Pos{2, 3},
-			true,
 		},
 	}
 	for _, tc := range testCases {
+		b.clear() // clear the board
+
 		for _, move := range tc.setupMoves {
 			b.posToPiece[move.pos] = move.piece
 		}
@@ -199,13 +198,9 @@ func TestMoveBlocked(t *testing.T) {
 		if !found {
 			t.Errorf("no piece found at pos %v", tc.p1)
 		}
-		if b.moveBlocked(piece, tc.p1, tc.p2) != tc.shouldBlock {
-			blockOrNot := "block"
-			if !tc.shouldBlock {
-				blockOrNot = "not block"
-			}
-			t.Errorf("expected moving piece %s from %v to %v to %s",
-				piece, tc.p1, tc.p2, blockOrNot)
+		if !b.moveBlocked(piece, tc.p1, tc.p2) {
+			t.Errorf("expected moving %s from %v to %v to block",
+				piece, tc.p1, tc.p2)
 		}
 	}
 }
