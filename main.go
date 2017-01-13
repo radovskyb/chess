@@ -15,7 +15,7 @@ func main() {
 	b.Print()
 
 	// engine.FourMoveCheckmate(b) // play a four move checkmate animation.
-	// if err := setupBoard3(b); err != nil {
+	// if err := setupBoardForCheck(b); err != nil {
 	// 	log.Fatalln(err)
 	// }
 
@@ -41,21 +41,45 @@ func main() {
 			continue
 		}
 		b.Print()
+		if checkInfo, isCheck := b.IsCheck(); isCheck {
+			fmt.Println(checkInfo)
+		}
 	}
 	if err := scanner.Err(); err != nil {
 		log.Fatalln(err)
 	}
 }
 
+func setupBoardForCheck(b *engine.Board) error {
+	if err := b.MoveByLocation("e2", "e3"); err != nil {
+		return err
+	}
+	if err := b.MoveByLocation("f7", "f5"); err != nil {
+		return err
+	}
+	if err := b.MoveByLocation("a2", "a4"); err != nil {
+		return err
+	}
+	if err := b.MoveByLocation("e8", "f7"); err != nil {
+		return err
+	}
+	if err := b.MoveByLocation("d1", "e2"); err != nil {
+		return err
+	}
+	if err := b.MoveByLocation("a7", "a5"); err != nil {
+		return err
+	}
+	b.Print()
+	return nil
+}
+
 func setupBoard1(b *engine.Board) error {
-	b.MoveByLocation("a2", "a4")
+	b.MoveByLocation("g2", "g4")
 	b.MoveByLocation("a7", "a5")
-	b.MoveByLocation("a1", "a3")
-	b.MoveByLocation("a8", "a6")
-	b.MoveByLocation("b2", "b3")
-	b.MoveByLocation("b7", "b6")
-	b.MoveByLocation("h2", "h4")
-	b.MoveByLocation("h7", "h5")
+	b.MoveByLocation("g4", "g5")
+	b.MoveByLocation("a5", "a4")
+	b.MoveByLocation("g5", "g6")
+	b.MoveByLocation("a4", "a3")
 	b.Print()
 	return nil
 }

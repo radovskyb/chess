@@ -24,10 +24,36 @@ const (
 	White
 )
 
+type checkInfo struct {
+	Color
+	ByPiece *Piece
+	FromPos Pos
+}
+
 type Board struct {
 	Turn       Color
 	posToPiece map[Pos]*Piece
 	kings      [2]Pos
+	check      *checkInfo
+}
+
+func (b *Board) IsCheck() (*checkInfo, bool) {
+	if b.check != nil {
+		return b.check, true
+	}
+	return nil, false
+}
+
+func (c *checkInfo) String() string {
+	color := "white"
+	if c.Color == Black {
+		color = "black"
+	}
+	return fmt.Sprintf("%s is now in check from the %s at %s",
+		color,
+		c.ByPiece.Name,
+		c.FromPos,
+	)
 }
 
 func NewBoard() *Board {
@@ -147,6 +173,10 @@ func (b *Board) moveByLocation(loc1, loc2 string) error {
 	return nil
 }
 
+// Move moves a piece on a board from positions p1 to p2.
+//
+// Move returns any errors that occur by trying to make
+// the move from p1 to p2.
 func (b *Board) Move(p1, p2 Pos) error {
 	// Get the piece at position p1.
 	piece, found := b.posToPiece[p1]
@@ -164,11 +194,29 @@ func (b *Board) Move(p1, p2 Pos) error {
 		return err
 	}
 
-	positions2 := getMovePositions(piece, p2)
+	// TODO: See if Color is currently in check and whether by
+	//		 moving the piece it unchecks the king or not and if
+	//		 no longer in check, set b.check to nil.
+
+	// Get the move positions for the piece now at position p2.
+	positions := getMovePositions(piece, p2)
+
+	// Get the positions of the opponents king.
 	kingPos := b.kings[piece.Color^1]
-	_, found = positions2[kingPos]
+
+	// Check if the king's position is found within any of the
+	// move positions for piece at p2.
+	_, found = positions[kingPos]
+
+	// If the king's position was found and there's no blockage
+	// between piece at p2 and the king's position, the opponent's
+	// king is in check.
 	if found && !b.moveBlocked(piece, p2, kingPos) {
-		fmt.Println("CHECK")
+		b.check = &checkInfo{
+			Color:   piece.Color ^ 1,
+			ByPiece: piece,
+			FromPos: p2,
+		}
 	}
 
 	// Move the piece to the new position.
@@ -176,6 +224,11 @@ func (b *Board) Move(p1, p2 Pos) error {
 
 	// Remove the piece from the old position.
 	delete(b.posToPiece, p1)
+
+	// Update current king's position.
+	if piece.Name == King {
+		b.kings[piece.Color] = p2
+	}
 
 	// Update who's turn it is.
 	b.Turn ^= 1
@@ -187,8 +240,6 @@ func (b *Board) Move(p1, p2 Pos) error {
 func (b *Board) moveLegal(piece *Piece, p1, p2 Pos) error {
 	// Get a list of all possible move positions that the
 	// piece can move to without restrictions.
-	//
-	// TODO: Work out to check diagonal squares for pawns to take pieces.
 	positions := getMovePositions(piece, p1)
 	if _, ok := positions[p2]; !ok {
 		return ErrInvalidPieceMove
@@ -212,18 +263,22 @@ func (b *Board) moveLegal(piece *Piece, p1, p2 Pos) error {
 		return ErrMoveBlocked
 	}
 
-	// See if move unblocks a path and now puts the king in check.
+	// TODO: See if move unblocks a path and now puts the king in check.
 	//
 	// Store below type moveBlocked positions at all times something
 	// would be in check in map such as b.blockedChecks[Pos]*Piece.
 
 	// If the piece is a King, see if by moving, it puts itself in check.
 	if piece.Name == King {
-		for pos, piece := range b.posToPiece {
-			piecePositions := getMovePositions(piece, pos)
+		for pos, piece2 := range b.posToPiece {
+
+			// TODO: If piece is opponent's king, don't allow
+			//		 within one x or y location.
+
+			piecePositions := getMovePositions(piece2, pos)
 			_, checkFound := piecePositions[p2]
 			// if checkFound && !b.moveBlocked(piece, pos, p2) {
-			if checkFound {
+			if checkFound && piece2.Color != piece.Color {
 				return ErrMovingIntoCheck
 			}
 		}
