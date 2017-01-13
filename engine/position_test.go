@@ -132,15 +132,45 @@ func TestGetMovePositions(t *testing.T) {
 		cur      Pos
 		expected []Pos
 	}{
-		{&Piece{Color: White, Name: Pawn}, Pos{0, 2}, []Pos{{0, 3}}},
-		{&Piece{Color: Black, Name: Pawn}, Pos{0, 5}, []Pos{{0, 4}}},
+		{
+			&Piece{Color: White, Name: Pawn}, Pos{1, 7},
+			[]Pos{},
+		},
+		{
+			&Piece{Color: Black, Name: Pawn}, Pos{1, 0},
+			[]Pos{},
+		},
+		{
+			&Piece{Color: White, Name: Pawn}, Pos{0, 2},
+			[]Pos{{0, 3}, {1, 3}},
+		},
+		{
+			&Piece{Color: Black, Name: Pawn}, Pos{0, 5},
+			[]Pos{{0, 4}, {1, 4}},
+		},
 		{
 			&Piece{Color: White, Name: Pawn}, Pos{0, 1},
-			[]Pos{{0, 2}, {0, 3}},
+			[]Pos{{0, 2}, {0, 3}, {1, 2}},
 		},
 		{
 			&Piece{Color: Black, Name: Pawn}, Pos{0, 6},
-			[]Pos{{0, 5}, {0, 4}},
+			[]Pos{{0, 5}, {0, 4}, {1, 5}},
+		},
+		{
+			&Piece{Color: White, Name: Pawn}, Pos{7, 1},
+			[]Pos{{6, 2}, {7, 2}, {7, 3}},
+		},
+		{
+			&Piece{Color: Black, Name: Pawn}, Pos{7, 6},
+			[]Pos{{7, 5}, {7, 4}, {6, 5}},
+		},
+		{
+			&Piece{Color: White, Name: Pawn}, Pos{4, 4},
+			[]Pos{{4, 5}, {3, 5}, {5, 5}},
+		},
+		{
+			&Piece{Color: Black, Name: Pawn}, Pos{4, 4},
+			[]Pos{{4, 3}, {3, 3}, {5, 3}},
 		},
 		{
 			&Piece{Name: Rook}, Pos{0, 0},

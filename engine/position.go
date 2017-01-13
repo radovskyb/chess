@@ -69,12 +69,28 @@ func getMovePositions(piece *Piece, cur Pos) map[Pos]struct{} {
 			if cur.Y == 6 {
 				pos[Pos{cur.X, cur.Y - 2}] = struct{}{}
 			}
-			pos[Pos{cur.X, cur.Y - 1}] = struct{}{}
+			if cur.Y != 0 {
+				pos[Pos{cur.X, cur.Y - 1}] = struct{}{}
+				if cur.X != 0 {
+					pos[Pos{cur.X - 1, cur.Y - 1}] = struct{}{}
+				}
+				if cur.X != 7 {
+					pos[Pos{cur.X + 1, cur.Y - 1}] = struct{}{}
+				}
+			}
 		case White:
 			if cur.Y == 1 {
 				pos[Pos{cur.X, cur.Y + 2}] = struct{}{}
 			}
-			pos[Pos{cur.X, cur.Y + 1}] = struct{}{}
+			if cur.Y != 7 {
+				pos[Pos{cur.X, cur.Y + 1}] = struct{}{}
+				if cur.X != 0 {
+					pos[Pos{cur.X - 1, cur.Y + 1}] = struct{}{}
+				}
+				if cur.X != 7 {
+					pos[Pos{cur.X + 1, cur.Y + 1}] = struct{}{}
+				}
+			}
 		}
 	case Knight:
 		pos[Pos{cur.X + 2, cur.Y + 1}] = struct{}{}

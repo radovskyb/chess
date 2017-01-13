@@ -202,6 +202,11 @@ func (b *Board) moveLegal(piece *Piece, p1, p2 Pos) error {
 		return ErrOccupiedPosition
 	}
 
+	// Pawn is moving yd+sideways, make sure there's an opponents piece at p2.
+	if !found && piece.Name == Pawn && p1.X != p2.X {
+		return ErrInvalidPieceMove
+	}
+
 	// Check if the move from p1 to p2 is blocked by any other pieces.
 	if b.moveBlocked(piece, p1, p2) {
 		return ErrMoveBlocked
