@@ -227,12 +227,41 @@ func (b *Board) moveLegal(piece *Piece, p1, p2 Pos) error {
 	return nil
 }
 
+func (b *Board) diagMoveBlocked(piece *Piece, p1, p2 Pos, xd, yd int) bool {
+	for x, y := p1.X+xd, p1.Y+yd; x != p2.X && y != p2.Y; x, y = x+xd, y+yd {
+		_, blocked := b.posToPiece[Pos{x, y}]
+		if blocked {
+			return true
+		}
+	}
+	return false
+}
+
+func (b *Board) lineMoveBlocked(piece *Piece, p1, p2 Pos, xd, yd int) bool {
+	switch {
+	case p1.Y != p2.Y:
+		for y := p1.Y + yd; y != p2.Y; y = y + yd {
+			_, blocked := b.posToPiece[Pos{p2.X, y}]
+			if blocked {
+				return true
+			}
+		}
+	case p1.X != p2.X:
+		for x := p1.X + xd; x != p2.X; x = x + xd {
+			_, blocked := b.posToPiece[Pos{x, p2.Y}]
+			if blocked {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func (b *Board) moveBlocked(piece *Piece, p1, p2 Pos) bool {
-	yd := 1
+	yd, xd := 1, 1
 	if p1.Y > p2.Y {
 		yd = -1
 	}
-	xd := 1
 	if p1.X > p2.X {
 		xd = -1
 	}
@@ -246,29 +275,14 @@ func (b *Board) moveBlocked(piece *Piece, p1, p2 Pos) bool {
 			return true
 		}
 	case Rook:
-		switch {
-		case p1.Y != p2.Y:
-			for y := p1.Y + yd; y != p2.Y; y = y + yd {
-				_, blocked := b.posToPiece[Pos{p2.X, y}]
-				if blocked {
-					return true
-				}
-			}
-		case p1.X != p2.X:
-			for x := p1.X + xd; x != p2.X; x = x + xd {
-				_, blocked := b.posToPiece[Pos{x, p2.Y}]
-				if blocked {
-					return true
-				}
-			}
-		}
+		return b.lineMoveBlocked(piece, p1, p2, xd, yd)
 	case Bishop:
-		for x, y := p1.X+xd, p1.Y+yd; x != p2.X && y != p2.Y; x, y = x+xd, y+yd {
-			_, blocked := b.posToPiece[Pos{x, y}]
-			if blocked {
-				return true
-			}
+		return b.diagMoveBlocked(piece, p1, p2, xd, yd)
+	case Queen:
+		if p1.Y == p2.Y || p1.X == p2.X {
+			return b.lineMoveBlocked(piece, p1, p2, xd, yd)
 		}
+		return b.diagMoveBlocked(piece, p1, p2, xd, yd)
 	}
 	return false
 }

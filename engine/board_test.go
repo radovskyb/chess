@@ -232,6 +232,34 @@ func TestMoveBlocked(t *testing.T) {
 				{Pos{3, 3}, Pos{1, 1}}, // Test blocking down+left.
 			},
 		},
+		// Queen
+		{
+			[]pieceToPos{
+				{&Piece{Queen, White}, Pos{3, 3}},
+				// Diagonal blockages.
+				{&Piece{Pawn, White}, Pos{4, 4}}, // Pawn up+right.
+				{&Piece{Pawn, White}, Pos{2, 4}}, // Pawn up+left.
+				{&Piece{Pawn, White}, Pos{4, 2}}, // Pawn down+right.
+				{&Piece{Pawn, White}, Pos{2, 2}}, // Pawn down+left.
+				// Line blockages.
+				{&Piece{Pawn, White}, Pos{4, 3}}, // Pawn right.
+				{&Piece{Pawn, White}, Pos{2, 3}}, // Pawn left.
+				{&Piece{Pawn, White}, Pos{3, 4}}, // Pawn up.
+				{&Piece{Pawn, White}, Pos{3, 2}}, // Pawn down.
+			},
+			[][2]Pos{
+				// Diagonal blockages.
+				{Pos{3, 3}, Pos{5, 5}}, // Test blocking up+right.
+				{Pos{3, 3}, Pos{1, 5}}, // Test blocking up+left.
+				{Pos{3, 3}, Pos{5, 1}}, // Test blocking down+right.
+				{Pos{3, 3}, Pos{1, 1}}, // Test blocking down+left.
+				// Line blockages.
+				{Pos{3, 3}, Pos{5, 3}}, // Test blocking right.
+				{Pos{3, 3}, Pos{1, 3}}, // Test blocking left.
+				{Pos{3, 3}, Pos{3, 5}}, // Test blocking up.
+				{Pos{3, 3}, Pos{3, 1}}, // Test blocking down.
+			},
+		},
 	}
 	for _, tc := range testCases {
 		b.clear() // clear the board
@@ -251,3 +279,5 @@ func TestMoveBlocked(t *testing.T) {
 		}
 	}
 }
+
+// func TestMoveNotBlocked(t *testing.T) {}
