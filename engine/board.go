@@ -81,16 +81,16 @@ func (b *Board) Print() {
 		for i2 := 0; i2 < 8; i2++ {
 			if piece, found := b.posToPiece[Pos{i2, 7 - i1}]; found {
 				if i2%2 == i1%2 {
-					printBlueBg("%s", piece)
-				} else {
 					printCyanBg("%s", piece)
+				} else {
+					printBlueBg("%s", piece)
 				}
 				continue
 			}
 			if i2%2 == i1%2 {
-				printBlueBg("%3s", "")
-			} else {
 				printCyanBg("%3s", "")
+			} else {
+				printBlueBg("%3s", "")
 			}
 		}
 		fmt.Println()
