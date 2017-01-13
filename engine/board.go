@@ -276,6 +276,9 @@ func (b *Board) moveBlocked(piece *Piece, p1, p2 Pos) bool {
 		if piece.Color == Black {
 			d = -1
 		}
+		if p1.X != p2.X {
+			return false
+		}
 		if _, blocked := b.posToPiece[Pos{p1.X, p1.Y + d}]; blocked {
 			return true
 		}
