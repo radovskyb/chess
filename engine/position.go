@@ -4,6 +4,10 @@ type Pos struct {
 	X, Y int
 }
 
+func (p Pos) String() string {
+	return string(p.X+'A') + string(p.Y+'1')
+}
+
 // locToPos turns a location string into a Pos object.
 // If the location is invalid, an error is returned and an empty Pos object is returned.
 func locToPos(loc string) (Pos, error) {
