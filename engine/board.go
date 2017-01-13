@@ -37,7 +37,7 @@ type Board struct {
 	check      *checkInfo
 }
 
-func (b *Board) IsCheck() (*checkInfo, bool) {
+func (b *Board) HasCheck() (*checkInfo, bool) {
 	if b.check != nil {
 		return b.check, true
 	}

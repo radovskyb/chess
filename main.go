@@ -41,7 +41,7 @@ func main() {
 			continue
 		}
 		b.Print()
-		if checkInfo, isCheck := b.IsCheck(); isCheck {
+		if checkInfo, hasCheck := b.HasCheck(); hasCheck {
 			fmt.Println(checkInfo)
 		}
 	}
