@@ -18,6 +18,7 @@ func main() {
 	// if err := setupBoardForCheck(b); err != nil {
 	// 	log.Fatalln(err)
 	// }
+	setupBoardForBlockage(b)
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
@@ -48,6 +49,15 @@ func main() {
 	if err := scanner.Err(); err != nil {
 		log.Fatalln(err)
 	}
+}
+
+func setupBoardForBlockage(b *engine.Board) error {
+	b.MoveByLocation("a2", "a3")
+	b.MoveByLocation("e7", "e5")
+	b.MoveByLocation("a3", "a4")
+	b.MoveByLocation("f8", "b4")
+	b.Print()
+	return nil
 }
 
 func setupBoardForCheck(b *engine.Board) error {

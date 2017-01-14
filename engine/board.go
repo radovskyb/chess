@@ -24,12 +24,18 @@ const (
 	White
 )
 
+// checkInfo is used to describe when a king is in check on a board.
+//
+// checkInfo contains the color of the king that's in check,
+// the piece that caused the check and also that piece's
+// position.
 type checkInfo struct {
 	Color
 	ByPiece *Piece
 	FromPos Pos
 }
 
+// A Board describes a chess board.
 type Board struct {
 	Turn       Color
 	posToPiece map[Pos]*Piece
@@ -37,6 +43,8 @@ type Board struct {
 	check      *checkInfo
 }
 
+// HasCheck reports whether there is currently a king in check
+// on the board and if so, returns a *checkInfo.
 func (b *Board) HasCheck() (*checkInfo, bool) {
 	if b.check != nil {
 		return b.check, true
@@ -208,14 +216,23 @@ func (b *Board) Move(p1, p2 Pos) error {
 	// move positions for piece at p2.
 	_, found = positions[kingPos]
 
-	// If the king's position was found and there's no blockage
+	// If the king's position was found and there's no blockages
 	// between piece at p2 and the king's position, the opponent's
 	// king is in check.
-	if found && !b.moveBlocked(piece, p2, kingPos) {
-		b.check = &checkInfo{
-			Color:   piece.Color ^ 1,
-			ByPiece: piece,
-			FromPos: p2,
+	//
+	// If there were blockages found, store the piece that would have
+	// caused the check, it's current position and also all of the
+	// positions that are between the piece and the king.
+	if found {
+		if !b.moveBlocked(piece, p2, kingPos) {
+			b.check = &checkInfo{
+				Color:   piece.Color ^ 1,
+				ByPiece: piece,
+				FromPos: p2,
+			}
+		} else {
+			between := b.piecesBetween(piece, p2, kingPos)
+			fmt.Println(between)
 		}
 	}
 
@@ -279,6 +296,9 @@ func (b *Board) moveLegal(piece *Piece, p1, p2 Pos) error {
 			_, checkFound := piecePositions[p2]
 			// if checkFound && !b.moveBlocked(piece, pos, p2) {
 			if checkFound && piece2.Color != piece.Color {
+				// if !blocked its a checked
+				//
+				// if not, run pieces between logic here.
 				return ErrMovingIntoCheck
 			}
 		}
@@ -287,7 +307,7 @@ func (b *Board) moveLegal(piece *Piece, p1, p2 Pos) error {
 	return nil
 }
 
-func (b *Board) diagMoveBlocked(piece *Piece, p1, p2 Pos, xd, yd int) bool {
+func (b *Board) diagMoveBlocked(p1, p2 Pos, xd, yd int) bool {
 	for x, y := p1.X+xd, p1.Y+yd; x != p2.X && y != p2.Y; x, y = x+xd, y+yd {
 		_, blocked := b.posToPiece[Pos{x, y}]
 		if blocked {
@@ -297,7 +317,7 @@ func (b *Board) diagMoveBlocked(piece *Piece, p1, p2 Pos, xd, yd int) bool {
 	return false
 }
 
-func (b *Board) lineMoveBlocked(piece *Piece, p1, p2 Pos, xd, yd int) bool {
+func (b *Board) lineMoveBlocked(p1, p2 Pos, xd, yd int) bool {
 	switch {
 	case p1.Y != p2.Y:
 		for y := p1.Y + yd; y != p2.Y; y = y + yd {
@@ -338,14 +358,81 @@ func (b *Board) moveBlocked(piece *Piece, p1, p2 Pos) bool {
 			return true
 		}
 	case Rook:
-		return b.lineMoveBlocked(piece, p1, p2, xd, yd)
+		return b.lineMoveBlocked(p1, p2, xd, yd)
 	case Bishop:
-		return b.diagMoveBlocked(piece, p1, p2, xd, yd)
+		return b.diagMoveBlocked(p1, p2, xd, yd)
 	case Queen:
 		if p1.Y == p2.Y || p1.X == p2.X {
-			return b.lineMoveBlocked(piece, p1, p2, xd, yd)
+			return b.lineMoveBlocked(p1, p2, xd, yd)
 		}
-		return b.diagMoveBlocked(piece, p1, p2, xd, yd)
+		return b.diagMoveBlocked(p1, p2, xd, yd)
 	}
 	return false
+}
+
+// TODO: benchmark if returning a slice of a struct with a pos and piece
+// will be faster than returning a map since the max blockages between
+// pieces will be 5.
+func (b *Board) piecesBetween(piece *Piece, p1, p2 Pos) map[Pos]*Piece {
+	yd, xd := 1, 1
+	if p1.Y > p2.Y {
+		yd = -1
+	}
+	if p1.X > p2.X {
+		xd = -1
+	}
+	switch piece.Name {
+	case Pawn:
+		d := 1
+		if piece.Color == Black {
+			d = -1
+		}
+		if p1.Y == p2.Y+(2*d) {
+			if piece, blocked := b.posToPiece[Pos{p1.X, p1.Y + d}]; blocked {
+				return map[Pos]*Piece{Pos{p1.X, p1.Y + d}: piece}
+			}
+		}
+	case Rook:
+		return b.lineBetween(p1, p2, xd, yd)
+	case Bishop:
+		return b.diagBetween(p1, p2, xd, yd)
+	case Queen:
+		if p1.Y == p2.Y || p1.X == p2.X {
+			return b.lineBetween(p1, p2, xd, yd)
+		}
+		return b.diagBetween(p1, p2, xd, yd)
+	}
+	return nil
+}
+
+func (b *Board) lineBetween(p1, p2 Pos, xd, yd int) map[Pos]*Piece {
+	m := map[Pos]*Piece{}
+	switch {
+	case p1.Y != p2.Y:
+		for y := p1.Y + yd; y != p2.Y; y = y + yd {
+			piece, blocked := b.posToPiece[Pos{p2.X, y}]
+			if blocked {
+				m[Pos{p2.X, y}] = piece
+			}
+		}
+	case p1.X != p2.X:
+		for x := p1.X + xd; x != p2.X; x = x + xd {
+			piece, blocked := b.posToPiece[Pos{x, p2.Y}]
+			if blocked {
+				m[Pos{x, p2.Y}] = piece
+			}
+		}
+	}
+	return m
+}
+
+func (b *Board) diagBetween(p1, p2 Pos, xd, yd int) map[Pos]*Piece {
+	m := map[Pos]*Piece{}
+	for x, y := p1.X+xd, p1.Y+yd; x != p2.X && y != p2.Y; x, y = x+xd, y+yd {
+		piece, blocked := b.posToPiece[Pos{x, y}]
+		if blocked {
+			m[Pos{x, y}] = piece
+		}
+	}
+	return m
 }
