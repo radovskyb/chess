@@ -35,12 +35,19 @@ type checkInfo struct {
 	FromPos Pos
 }
 
+// piecePos contains a *Piece and it's position on the board.
+type piecePos struct {
+	*Piece
+	Pos
+}
+
 // A Board describes a chess board.
 type Board struct {
 	Turn       Color
 	posToPiece map[Pos]*Piece
 	kings      [2]Pos
 	check      *checkInfo
+	kingLOS    [2]map[Pos]*piecePos
 }
 
 // HasCheck reports whether there is currently a king in check
@@ -93,6 +100,7 @@ func NewBoard() *Board {
 		Turn:       White,
 		posToPiece: posToPiece,
 		kings:      [2]Pos{White: {4, 0}, Black: {4, 7}},
+		kingLOS:    [2]map[Pos]*piecePos{White: {}, Black: {}},
 	}
 }
 
@@ -231,8 +239,12 @@ func (b *Board) Move(p1, p2 Pos) error {
 				FromPos: p2,
 			}
 		} else {
-			between := b.piecesBetween(piece, p2, kingPos)
-			fmt.Println(between)
+			// TODO: RECHECK - MISSING POSITION C3
+			between := b.positionsBetween(piece, p2, kingPos)
+			for pos := range between {
+				b.kingLOS[piece.Color^1][pos] = &piecePos{piece, p2}
+			}
+			fmt.Println(b.kingLOS)
 		}
 	}
 
@@ -296,9 +308,10 @@ func (b *Board) moveLegal(piece *Piece, p1, p2 Pos) error {
 			_, checkFound := piecePositions[p2]
 			// if checkFound && !b.moveBlocked(piece, pos, p2) {
 			if checkFound && piece2.Color != piece.Color {
+				// TODO:
 				// if !blocked its a checked
 				//
-				// if not, run pieces between logic here.
+				// if not, run positions between logic here.
 				return ErrMovingIntoCheck
 			}
 		}
@@ -373,7 +386,7 @@ func (b *Board) moveBlocked(piece *Piece, p1, p2 Pos) bool {
 // TODO: benchmark if returning a slice of a struct with a pos and piece
 // will be faster than returning a map since the max blockages between
 // pieces will be 5.
-func (b *Board) piecesBetween(piece *Piece, p1, p2 Pos) map[Pos]*Piece {
+func (b *Board) positionsBetween(piece *Piece, p1, p2 Pos) map[Pos]struct{} {
 	yd, xd := 1, 1
 	if p1.Y > p2.Y {
 		yd = -1
@@ -388,9 +401,7 @@ func (b *Board) piecesBetween(piece *Piece, p1, p2 Pos) map[Pos]*Piece {
 			d = -1
 		}
 		if p1.Y == p2.Y+(2*d) {
-			if piece, blocked := b.posToPiece[Pos{p1.X, p1.Y + d}]; blocked {
-				return map[Pos]*Piece{Pos{p1.X, p1.Y + d}: piece}
-			}
+			return map[Pos]struct{}{Pos{p1.X, p1.Y + d}: struct{}{}}
 		}
 	case Rook:
 		return b.lineBetween(p1, p2, xd, yd)
@@ -405,34 +416,25 @@ func (b *Board) piecesBetween(piece *Piece, p1, p2 Pos) map[Pos]*Piece {
 	return nil
 }
 
-func (b *Board) lineBetween(p1, p2 Pos, xd, yd int) map[Pos]*Piece {
-	m := map[Pos]*Piece{}
+func (b *Board) lineBetween(p1, p2 Pos, xd, yd int) map[Pos]struct{} {
+	m := map[Pos]struct{}{}
 	switch {
 	case p1.Y != p2.Y:
 		for y := p1.Y + yd; y != p2.Y; y = y + yd {
-			piece, blocked := b.posToPiece[Pos{p2.X, y}]
-			if blocked {
-				m[Pos{p2.X, y}] = piece
-			}
+			m[Pos{p2.X, y}] = struct{}{}
 		}
 	case p1.X != p2.X:
 		for x := p1.X + xd; x != p2.X; x = x + xd {
-			piece, blocked := b.posToPiece[Pos{x, p2.Y}]
-			if blocked {
-				m[Pos{x, p2.Y}] = piece
-			}
+			m[Pos{x, p2.Y}] = struct{}{}
 		}
 	}
 	return m
 }
 
-func (b *Board) diagBetween(p1, p2 Pos, xd, yd int) map[Pos]*Piece {
-	m := map[Pos]*Piece{}
+func (b *Board) diagBetween(p1, p2 Pos, xd, yd int) map[Pos]struct{} {
+	m := map[Pos]struct{}{}
 	for x, y := p1.X+xd, p1.Y+yd; x != p2.X && y != p2.Y; x, y = x+xd, y+yd {
-		piece, blocked := b.posToPiece[Pos{x, y}]
-		if blocked {
-			m[Pos{x, y}] = piece
-		}
+		m[Pos{x, y}] = struct{}{}
 	}
 	return m
 }
