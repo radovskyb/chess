@@ -9,7 +9,7 @@ func (p Pos) String() string {
 }
 
 // locToPos turns a location string into a Pos object.
-// If the location is invalid, an error is returned and an empty Pos object is returned.
+// If the location is invalid, an error and an invalid position is returned.
 func locToPos(loc string) (Pos, error) {
 	if len(loc) != 2 {
 		return Pos{-1, -1}, ErrInvalidLocation
@@ -68,6 +68,7 @@ func getMovePositions(piece *Piece, cur Pos) map[Pos]struct{} {
 
 	switch piece.Name {
 	case Pawn:
+		// TODO: Replace y == 6 or y == 1 logic with if not yet moved.
 		switch piece.Color {
 		case Black:
 			if cur.Y == 6 {

@@ -239,9 +239,8 @@ func (b *Board) Move(p1, p2 Pos) error {
 				FromPos: p2,
 			}
 		} else {
-			// TODO: RECHECK - MISSING POSITION C3
 			between := b.positionsBetween(piece, p2, kingPos)
-			for pos := range between {
+			for _, pos := range between {
 				b.kingLOS[piece.Color^1][pos] = &piecePos{piece, p2}
 			}
 			fmt.Println(b.kingLOS)
@@ -383,10 +382,13 @@ func (b *Board) moveBlocked(piece *Piece, p1, p2 Pos) bool {
 	return false
 }
 
-// TODO: benchmark if returning a slice of a struct with a pos and piece
-// will be faster than returning a map since the max blockages between
-// pieces will be 5.
-func (b *Board) positionsBetween(piece *Piece, p1, p2 Pos) map[Pos]struct{} {
+// positionsBetween returns a slice of all positions between 2
+// positions based on what type of piece is at position p1.
+//
+// positionsBetween returns a slice and not a map since the returned
+// positions are taken and added to a separate map and lookups are
+// not actually done directly on the returned values.
+func (b *Board) positionsBetween(piece *Piece, p1, p2 Pos) []Pos {
 	yd, xd := 1, 1
 	if p1.Y > p2.Y {
 		yd = -1
@@ -401,7 +403,7 @@ func (b *Board) positionsBetween(piece *Piece, p1, p2 Pos) map[Pos]struct{} {
 			d = -1
 		}
 		if p1.Y == p2.Y+(2*d) {
-			return map[Pos]struct{}{Pos{p1.X, p1.Y + d}: struct{}{}}
+			return []Pos{Pos{p1.X, p1.Y + d}}
 		}
 	case Rook:
 		return b.lineBetween(p1, p2, xd, yd)
@@ -416,25 +418,25 @@ func (b *Board) positionsBetween(piece *Piece, p1, p2 Pos) map[Pos]struct{} {
 	return nil
 }
 
-func (b *Board) lineBetween(p1, p2 Pos, xd, yd int) map[Pos]struct{} {
-	m := map[Pos]struct{}{}
+func (b *Board) lineBetween(p1, p2 Pos, xd, yd int) []Pos {
+	var pos []Pos
 	switch {
 	case p1.Y != p2.Y:
 		for y := p1.Y + yd; y != p2.Y; y = y + yd {
-			m[Pos{p2.X, y}] = struct{}{}
+			pos = append(pos, Pos{p2.X, y})
 		}
 	case p1.X != p2.X:
 		for x := p1.X + xd; x != p2.X; x = x + xd {
-			m[Pos{x, p2.Y}] = struct{}{}
+			pos = append(pos, Pos{x, p2.Y})
 		}
 	}
-	return m
+	return pos
 }
 
-func (b *Board) diagBetween(p1, p2 Pos, xd, yd int) map[Pos]struct{} {
-	m := map[Pos]struct{}{}
+func (b *Board) diagBetween(p1, p2 Pos, xd, yd int) []Pos {
+	var pos []Pos
 	for x, y := p1.X+xd, p1.Y+yd; x != p2.X && y != p2.Y; x, y = x+xd, y+yd {
-		m[Pos{x, y}] = struct{}{}
+		pos = append(pos, Pos{x, y})
 	}
-	return m
+	return pos
 }
