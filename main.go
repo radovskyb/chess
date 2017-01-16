@@ -18,7 +18,9 @@ func main() {
 	// if err := setupBoardForCheck(b); err != nil {
 	// 	log.Fatalln(err)
 	// }
-	setupBoardForBlockage(b)
+	// setupBoardForBlockage(b)
+	// setupBoardForBlockage2(b)
+	setupBoardForBlockage3(b)
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
@@ -49,6 +51,35 @@ func main() {
 	if err := scanner.Err(); err != nil {
 		log.Fatalln(err)
 	}
+}
+
+func setupBoardForBlockage3(b *engine.Board) error {
+	b.MoveByLocation("d2", "d4")
+	b.MoveByLocation("e7", "e5")
+	b.MoveByLocation("d4", "e5")
+	b.MoveByLocation("d8", "e7")
+	b.MoveByLocation("e5", "e6")
+	b.MoveByLocation("e7", "e6")
+	b.MoveByLocation("e2", "e4")
+	b.MoveByLocation("e6", "e4")
+	b.MoveByLocation("f1", "e2")
+	b.MoveByLocation("f8", "b4")
+	// b.MoveByLocation("d1", "d2")
+	// b.MoveByLocation("e4", "e2")
+	b.Print()
+	return nil
+}
+
+func setupBoardForBlockage2(b *engine.Board) error {
+	b.MoveByLocation("d2", "d4")
+	b.MoveByLocation("e7", "e5")
+	b.MoveByLocation("d4", "e5")
+	b.MoveByLocation("d8", "e7")
+	b.MoveByLocation("e5", "e6")
+	b.MoveByLocation("e7", "e6")
+	// b.MoveByLocation("e2", "e3") // <-- causing unwanted check.
+	b.Print()
+	return nil
 }
 
 func setupBoardForBlockage(b *engine.Board) error {
