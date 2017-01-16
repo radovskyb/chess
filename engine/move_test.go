@@ -306,3 +306,68 @@ func TestCantMovePieceIntoCheck(t *testing.T) {
 			moveIntoCheckFrom, moveIntoCheckTo)
 	}
 }
+
+func TestCantMovePieceWhenInCheck(t *testing.T) {
+	b := NewBoard()
+
+	moves := []struct {
+		from, to string
+	}{
+		{"e2", "e3"},
+		{"f7", "f5"},
+		{"a2", "a4"},
+		{"e8", "f7"},
+		{"d1", "e2"},
+		{"a7", "a5"},
+		{"e2", "c4"},
+	}
+
+	for _, move := range moves {
+		if err := b.MoveByLocation(move.from, move.to); err != nil {
+			t.Fatalf("moving from %s to %s failed: %s",
+				move.from, move.to, err.Error())
+		}
+	}
+
+	_, hasCheck := b.HasCheck()
+	if !hasCheck {
+		t.Error("expected board to have a check")
+	}
+
+	err := b.MoveByLocation("a8", "a6")
+	if err == nil {
+		t.Error("expected to not be able to move piece whilst in check")
+	}
+}
+
+func TestCanMovePieceInCheckToUncheck(t *testing.T) {
+	b := NewBoard()
+
+	moves := []struct {
+		from, to string
+	}{
+		{"e2", "e3"},
+		{"f7", "f5"},
+		{"a2", "a4"},
+		{"e8", "f7"},
+		{"d1", "e2"},
+		{"a7", "a5"},
+		{"e2", "c4"},
+	}
+
+	for _, move := range moves {
+		if err := b.MoveByLocation(move.from, move.to); err != nil {
+			t.Fatalf("moving from %s to %s failed: %s",
+				move.from, move.to, err.Error())
+		}
+	}
+
+	_, hasCheck := b.HasCheck()
+	if !hasCheck {
+		t.Error("expected board to have a check")
+	}
+
+	if err := b.MoveByLocation("e7", "e6"); err != nil {
+		t.Error("expected to be able to move piece to block check")
+	}
+}
