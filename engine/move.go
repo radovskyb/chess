@@ -124,35 +124,7 @@ func (b *Board) moveLegal(piece *Piece, p1, p2 Pos) error {
 	}
 
 	// Make sure move doesn't put own king in check.
-	for i, pp := range b.kingLos[piece.Color] {
-		// Check if piece is still at pp.Pos
-		pc, found := b.posToPiece[pp.Pos]
-		if !found || pc != pp.Piece {
-			// Delete from b.kingLos[piece.Color]
-			kLos := b.kingLos[piece.Color]
-			kLos = append(kLos[:i], kLos[i:]...)
-			continue
-		}
-		positions := getMovePositions(pp.Piece, pp.Pos)
-		if _, p1found := positions[p1]; p1found {
-			// Remove the piece from it's current position on the board so
-			// that it doesn't block any pieces while checkin moveBlocked.
-			delete(b.posToPiece, p1)
-
-			blocked := b.moveBlocked(pp.Piece, pp.Pos, b.kings[piece.Color])
-
-			// Put the piece back at position p1.
-			b.posToPiece[p1] = piece
-
-			if !blocked {
-				return ErrMovingIntoCheck
-			}
-		}
-	}
-
-	// If color is in check, make sure that the piece can't
-	// be moved, unless it evades the current check.
-	if b.check[piece.Color] {
+	if piece.Name != King {
 		for i, pp := range b.kingLos[piece.Color] {
 			// Check if piece is still at pp.Pos
 			pc, found := b.posToPiece[pp.Pos]
@@ -163,40 +135,82 @@ func (b *Board) moveLegal(piece *Piece, p1, p2 Pos) error {
 				continue
 			}
 
-			// Get the piece currently at p2.
-			pc2 := b.posToPiece[p2]
-
-			// Move p1's piece to p2.
-			b.posToPiece[p2] = piece
-
-			// Check if pp.Piece is still causing check.
-			blocked := b.moveBlocked(pp.Piece, pp.Pos,
-				b.kings[piece.Color])
-
-			// Move p1's piece back to p1.
-			b.posToPiece[p1] = piece
-
-			// Delete p1's piece from p2.
-			delete(b.posToPiece, p2)
-
-			// If p2 originally contained a piece, put it back.
-			if pc2 != nil {
-				b.posToPiece[p2] = pc2
-			}
-
-			// If moving to p2 would block pp.Piece from
-			// causing check, continue.
-			if blocked {
+			// If piece is trying to take pp.Piece, continue.
+			if p2 == pp.Pos {
 				continue
 			}
 
-			// If there would still be a check, return an
-			// ErrMoveWhileInCheck error.
-			return ErrMoveWhileInCheck
+			positions := getMovePositions(pp.Piece, pp.Pos)
+			if _, p1found := positions[p1]; p1found {
+				// Remove the piece from it's current position on the board so
+				// that it doesn't block any pieces while checkin moveBlocked.
+				delete(b.posToPiece, p1)
+
+				blocked := b.moveBlocked(pp.Piece, pp.Pos, b.kings[piece.Color])
+
+				// Put the piece back at position p1.
+				b.posToPiece[p1] = piece
+
+				if !blocked {
+					return ErrMovingIntoCheck
+				}
+			}
+		}
+
+		// If color is in check, make sure that the piece can't
+		// be moved, unless it evades the current check.
+		if b.check[piece.Color] {
+			for i, pp := range b.kingLos[piece.Color] {
+				// Check if piece is still at pp.Pos
+				pc, found := b.posToPiece[pp.Pos]
+				if !found || pc != pp.Piece {
+					// Delete from b.kingLos[piece.Color]
+					kLos := b.kingLos[piece.Color]
+					kLos = append(kLos[:i], kLos[i:]...)
+					continue
+				}
+
+				// If piece is trying to take pp.Piece, continue.
+				if p2 == pp.Pos {
+					continue
+				}
+
+				// Get the piece currently at p2.
+				pc2 := b.posToPiece[p2]
+
+				// Move p1's piece to p2.
+				b.posToPiece[p2] = piece
+
+				// Check if pp.Piece is still causing check.
+				blocked := b.moveBlocked(pp.Piece, pp.Pos,
+					b.kings[piece.Color])
+
+				// Move p1's piece back to p1.
+				b.posToPiece[p1] = piece
+
+				// Delete p1's piece from p2.
+				delete(b.posToPiece, p2)
+
+				// If p2 originally contained a piece, put it back.
+				if pc2 != nil {
+					b.posToPiece[p2] = pc2
+				}
+
+				// If moving to p2 would block pp.Piece from
+				// causing check, continue.
+				if blocked {
+					continue
+				}
+
+				// If there would still be a check, return an
+				// ErrMoveWhileInCheck error.
+				return ErrMoveWhileInCheck
+			}
 		}
 	}
 
-	// If the piece is a King, see if by moving, it puts itself in check.
+	// If the piece is a King, see if it can move to p2 without
+	// being put into check.
 	if piece.Name == King {
 		// Remove the king from it's current position on the board
 		// so that it doesn't block any pieces in position attacked.
