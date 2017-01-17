@@ -14,15 +14,23 @@ func main() {
 	b := engine.NewBoard()
 	b.Print()
 
-	// engine.FourMoveCheckmate(b) // play a four move checkmate animation.
-	// if err := setupBoardForCheck(b); err != nil {
-	// 	log.Fatalln(err)
-	// }
-	setupBoardForCheck(b)
-	// setupBoardForBlockage(b)
-	// setupBoardForBlockage2(b)
-	// setupBoardForBlockage3(b)
-	// setupBoardForBlockage4(b)
+	// blockageMovesStr1 := "d2d4,e7e5,e1d2,f8b4"
+	// blockageMovesStr2 := "a2a3,e7e5,a3a4,f8b4"
+	// blockageMovesStr3 := "d2d4,e7e5,d4e5,d8e7,e5e6,e7e6a"
+	// blockageMovesStr4 := "d2d4,e7e5,d4e5,d8e7,e5e6,e7e6,e2e4,e6e4,f1e2,f8b4"
+	// setupForCheckStr1 := "e2e3,f7f5,a2a4,e8f7,d1e2,a7a5"
+	setupForCheckStr2 := "e2e3,e7e5,b2b4,f8b4,a2a3,b4d2"
+	// setupBoardStr1 := "g2g4,a7a5,g4g5,a5a4,g5g6,a4a3"
+	// setupBoardStr2 := "a2a4,a7a5,a1a3,a8a6,a3c3,c7c5"
+	// setupBoardStr3 := "a2a4,d7d5,a1a3,d5d4,a3g3,d4d3"
+
+	moves := strings.Split(setupForCheckStr2, ",")
+	for _, move := range moves {
+		if err := b.MoveByLocation(move[0:2], move[2:]); err != nil {
+			log.Fatalln(err)
+		}
+	}
+	b.Print()
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
@@ -53,113 +61,4 @@ func main() {
 	if err := scanner.Err(); err != nil {
 		log.Fatalln(err)
 	}
-}
-
-func setupBoardForBlockage4(b *engine.Board) error {
-	b.MoveByLocation("d2", "d4")
-	b.MoveByLocation("e7", "e5")
-	b.MoveByLocation("e1", "d2")
-	b.MoveByLocation("f8", "b4")
-	// b.MoveByLocation("d8", "e7")
-	// b.MoveByLocation("e5", "e6")
-	// b.MoveByLocation("e7", "e6")
-	// b.MoveByLocation("e2", "e4")
-	// b.MoveByLocation("e6", "e4")
-	// b.MoveByLocation("f1", "e2")
-	b.Print()
-	return nil
-}
-
-func setupBoardForBlockage3(b *engine.Board) error {
-	b.MoveByLocation("d2", "d4")
-	b.MoveByLocation("e7", "e5")
-	b.MoveByLocation("d4", "e5")
-	b.MoveByLocation("d8", "e7")
-	b.MoveByLocation("e5", "e6")
-	b.MoveByLocation("e7", "e6")
-	b.MoveByLocation("e2", "e4")
-	b.MoveByLocation("e6", "e4")
-	b.MoveByLocation("f1", "e2")
-	b.MoveByLocation("f8", "b4")
-	// b.MoveByLocation("d1", "d2")
-	// b.MoveByLocation("e4", "e2")
-	b.Print()
-	return nil
-}
-
-func setupBoardForBlockage2(b *engine.Board) error {
-	b.MoveByLocation("d2", "d4")
-	b.MoveByLocation("e7", "e5")
-	b.MoveByLocation("d4", "e5")
-	b.MoveByLocation("d8", "e7")
-	b.MoveByLocation("e5", "e6")
-	b.MoveByLocation("e7", "e6")
-	// b.MoveByLocation("e2", "e3") // <-- causing unwanted check.
-	b.Print()
-	return nil
-}
-
-func setupBoardForBlockage(b *engine.Board) error {
-	b.MoveByLocation("a2", "a3")
-	b.MoveByLocation("e7", "e5")
-	b.MoveByLocation("a3", "a4")
-	b.MoveByLocation("f8", "b4")
-	b.Print()
-	return nil
-}
-
-func setupBoardForCheck(b *engine.Board) error {
-	if err := b.MoveByLocation("e2", "e3"); err != nil {
-		return err
-	}
-	if err := b.MoveByLocation("f7", "f5"); err != nil {
-		return err
-	}
-	if err := b.MoveByLocation("a2", "a4"); err != nil {
-		return err
-	}
-	if err := b.MoveByLocation("e8", "f7"); err != nil {
-		return err
-	}
-	if err := b.MoveByLocation("d1", "e2"); err != nil {
-		return err
-	}
-	if err := b.MoveByLocation("a7", "a5"); err != nil {
-		return err
-	}
-	b.Print()
-	return nil
-}
-
-func setupBoard1(b *engine.Board) error {
-	b.MoveByLocation("g2", "g4")
-	b.MoveByLocation("a7", "a5")
-	b.MoveByLocation("g4", "g5")
-	b.MoveByLocation("a5", "a4")
-	b.MoveByLocation("g5", "g6")
-	b.MoveByLocation("a4", "a3")
-	b.Print()
-	return nil
-}
-
-func setupBoard2(b *engine.Board) error {
-	b.MoveByLocation("a2", "a4")
-	b.MoveByLocation("a7", "a5")
-	b.MoveByLocation("a1", "a3")
-	b.MoveByLocation("a8", "a6")
-	b.MoveByLocation("a3", "c3")
-	b.MoveByLocation("c7", "c5")
-	b.Print()
-	return nil
-}
-
-func setupBoard3(b *engine.Board) error {
-	b.MoveByLocation("a2", "a4")
-	b.MoveByLocation("d7", "d5")
-	b.MoveByLocation("a1", "a3")
-	b.MoveByLocation("d5", "d4")
-	b.MoveByLocation("a3", "g3")
-	b.MoveByLocation("d4", "d3")
-	b.Print()
-	return nil
 }
