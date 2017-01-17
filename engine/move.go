@@ -162,40 +162,37 @@ func (b *Board) moveLegal(piece *Piece, p1, p2 Pos) error {
 				kLos = append(kLos[:i], kLos[i:]...)
 				continue
 			}
-			positions := getMovePositions(pp.Piece, pp.Pos)
-			if _, p2found := positions[p2]; p2found {
 
-				// Get the piece currently at p2.
-				pc2 := b.posToPiece[p2]
+			// Get the piece currently at p2.
+			pc2 := b.posToPiece[p2]
 
-				// Move p1's piece to p2.
-				b.posToPiece[p2] = piece
+			// Move p1's piece to p2.
+			b.posToPiece[p2] = piece
 
-				// Check if pp.Piece is still causing check.
-				blocked := b.moveBlocked(pp.Piece, pp.Pos,
-					b.kings[piece.Color])
+			// Check if pp.Piece is still causing check.
+			blocked := b.moveBlocked(pp.Piece, pp.Pos,
+				b.kings[piece.Color])
 
-				// Move p1's piece back to p1.
-				b.posToPiece[p1] = piece
+			// Move p1's piece back to p1.
+			b.posToPiece[p1] = piece
 
-				// Delete p1's piece from p2.
-				delete(b.posToPiece, p2)
+			// Delete p1's piece from p2.
+			delete(b.posToPiece, p2)
 
-				// If p2 originally contained a piece, put it back.
-				if pc2 != nil {
-					b.posToPiece[p2] = pc2
-				}
-
-				// If moving to p2 would block pp.Piece from
-				// causing check, continue.
-				if blocked {
-					continue
-				}
-
-				// If there would still be a check, return an
-				// ErrMoveWhileInCheck error.
-				return ErrMoveWhileInCheck
+			// If p2 originally contained a piece, put it back.
+			if pc2 != nil {
+				b.posToPiece[p2] = pc2
 			}
+
+			// If moving to p2 would block pp.Piece from
+			// causing check, continue.
+			if blocked {
+				continue
+			}
+
+			// If there would still be a check, return an
+			// ErrMoveWhileInCheck error.
+			return ErrMoveWhileInCheck
 		}
 	}
 
