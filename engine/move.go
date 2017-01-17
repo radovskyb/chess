@@ -1,7 +1,5 @@
 package engine
 
-import "fmt"
-
 func (b *Board) MoveByLocation(loc1, loc2 string) error {
 	pos1, err := locToPos(loc1)
 	if err != nil {
@@ -35,17 +33,6 @@ func (b *Board) moveByLocation(loc1, loc2 string) error {
 	return nil
 }
 
-// numFilledPos is a helper method that returns the number of
-// positions that contain pieces out of a slice of positions.
-func (b *Board) numFilledPos(positions []Pos) (i int) {
-	for _, pos := range positions {
-		if _, found := b.posToPiece[pos]; found {
-			i++
-		}
-	}
-	return i
-}
-
 // Move moves a piece on a board from positions p1 to p2.
 //
 // Move returns any errors that occur by trying to make
@@ -77,24 +64,9 @@ func (b *Board) Move(p1, p2 Pos) error {
 	// move positions for piece at p2.
 	_, found = positions[kingPos]
 
-	// If the king's position was found and there's no blockages
-	// between piece at p2 and the king's position, the opponent's
-	// king is in check.
-	//
-	// If there were blockages found, store the piece that would have
-	// caused the check, it's current position and also all of the
-	// positions that are between the piece and the king.
-	if found {
-		if !b.moveBlocked(piece, p2, kingPos) {
-			b.check[piece.Color^1] = &checkInfo{
-				Color:   piece.Color ^ 1,
-				ByPiece: piece,
-				FromPos: p2,
-			}
-		} else {
-			between := b.positionsBetween(piece, p2, kingPos)
-			fmt.Println(between)
-		}
+	// If the king's position was found as isn't blocked, it's a check.
+	if found && !b.moveBlocked(piece, p2, kingPos) {
+		b.check[piece.Color^1] = true
 	}
 
 	// Move the piece to the new position.
@@ -112,15 +84,6 @@ func (b *Board) Move(p1, p2 Pos) error {
 	b.Turn ^= 1
 
 	return nil
-}
-
-func containsPos(positions []Pos, p Pos) bool {
-	for _, pos := range positions {
-		if pos == p {
-			return true
-		}
-	}
-	return false
 }
 
 // moveLegal checks to see whether the specified move is legal to make or not.
@@ -152,23 +115,38 @@ func (b *Board) moveLegal(piece *Piece, p1, p2 Pos) error {
 
 	// If the piece is a King, see if by moving, it puts itself in check.
 	if piece.Name == King {
-		for pos, piece2 := range b.posToPiece {
+		// Remove the king from it's current position on the board
+		// so that it doesn't block any pieces in position attacked.
+		delete(b.posToPiece, p1)
 
-			// TODO: If piece is opponent's king, don't allow
-			//		 within one x or y location.
+		// Check if the position is being attacked
+		attacked := b.positionAttacked(p2, piece.Color)
 
-			piecePositions := getMovePositions(piece2, pos)
-			_, checkFound := piecePositions[p2]
-			if !checkFound || piece2.Color == piece.Color {
-				continue
-			}
-			if !b.moveBlocked(piece2, pos, p2) {
-				return ErrMovingIntoCheck
-			}
+		// Put the king back at position p1.
+		b.posToPiece[p1] = piece
+
+		// If the position is being attacked, the move is illegal
+		// as the king would be moving into a check.
+		if attacked {
+			return ErrMovingIntoCheck
 		}
 	}
 
 	return nil
+}
+
+func (b *Board) positionAttacked(at Pos, c Color) bool {
+	for pos, piece := range b.posToPiece {
+		if piece.Color == c {
+			continue
+		}
+		positions := getMovePositions(piece, pos)
+		_, found := positions[at]
+		if found && !b.moveBlocked(piece, pos, at) {
+			return true
+		}
+	}
+	return false
 }
 
 func (b *Board) diagMoveBlocked(p1, p2 Pos, xd, yd int) bool {

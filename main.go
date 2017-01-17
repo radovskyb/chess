@@ -18,9 +18,11 @@ func main() {
 	// if err := setupBoardForCheck(b); err != nil {
 	// 	log.Fatalln(err)
 	// }
+	setupBoardForCheck(b)
 	// setupBoardForBlockage(b)
 	// setupBoardForBlockage2(b)
-	setupBoardForBlockage3(b)
+	// setupBoardForBlockage3(b)
+	// setupBoardForBlockage4(b)
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
@@ -44,13 +46,28 @@ func main() {
 			continue
 		}
 		b.Print()
-		if checkInfo, hasCheck := b.HasCheck(); hasCheck {
-			fmt.Println(checkInfo)
+		if hasCheck, color := b.HasCheck(); hasCheck {
+			fmt.Printf("%s is in check\n", color)
 		}
 	}
 	if err := scanner.Err(); err != nil {
 		log.Fatalln(err)
 	}
+}
+
+func setupBoardForBlockage4(b *engine.Board) error {
+	b.MoveByLocation("d2", "d4")
+	b.MoveByLocation("e7", "e5")
+	b.MoveByLocation("e1", "d2")
+	b.MoveByLocation("f8", "b4")
+	// b.MoveByLocation("d8", "e7")
+	// b.MoveByLocation("e5", "e6")
+	// b.MoveByLocation("e7", "e6")
+	// b.MoveByLocation("e2", "e4")
+	// b.MoveByLocation("e6", "e4")
+	// b.MoveByLocation("f1", "e2")
+	b.Print()
+	return nil
 }
 
 func setupBoardForBlockage3(b *engine.Board) error {

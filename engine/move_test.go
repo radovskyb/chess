@@ -227,27 +227,12 @@ func TestHasCheck(t *testing.T) {
 		}
 	}
 
-	chInfo, hasCheck := b.HasCheck()
+	hasCheck, color := b.HasCheck()
 	if !hasCheck {
 		t.Error("expected board to have a check")
 	}
-
-	pos, err := locToPos(moves[len(moves)-1].to)
-	if err != nil {
-		t.Error(err)
-	}
-	if chInfo.FromPos != pos {
-		t.Errorf("expected check to be from pos %s, got %s",
-			pos, chInfo.FromPos)
-	}
-
-	piece, found := b.posToPiece[pos]
-	if !found {
-		t.Errorf("expected %s to be found at pos %s", chInfo.ByPiece, pos)
-	}
-	if piece != chInfo.ByPiece {
-		t.Errorf("expected check to be by %s, got %s",
-			chInfo.ByPiece, piece)
+	if color != Black {
+		t.Error("expected black to be in check")
 	}
 }
 
@@ -329,7 +314,7 @@ func TestCantMovePieceWhenInCheck(t *testing.T) {
 		}
 	}
 
-	_, hasCheck := b.HasCheck()
+	hasCheck, _ := b.HasCheck()
 	if !hasCheck {
 		t.Error("expected board to have a check")
 	}
@@ -362,7 +347,7 @@ func TestCanMovePieceInCheckToUncheck(t *testing.T) {
 		}
 	}
 
-	_, hasCheck := b.HasCheck()
+	hasCheck, _ := b.HasCheck()
 	if !hasCheck {
 		t.Error("expected board to have a check")
 	}

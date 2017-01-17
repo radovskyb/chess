@@ -25,21 +25,15 @@ const (
 	White
 )
 
-// checkInfo is used to describe when a king is in check on a board.
-//
-// checkInfo contains the color of the king that's in check,
-// the piece that caused the check and also that piece's
-// position.
-type checkInfo struct {
-	Color
-	ByPiece *Piece
-	FromPos Pos
-}
-
-// piecePos contains a *Piece and it's position on the board.
-type piecePos struct {
-	*Piece
-	Pos
+func (c Color) String() string {
+	switch c {
+	case Black:
+		return "black"
+	case White:
+		return "white"
+	default:
+		return "invalid color"
+	}
 }
 
 // A Board describes a chess board.
@@ -47,31 +41,19 @@ type Board struct {
 	Turn       Color
 	posToPiece map[Pos]*Piece
 	kings      [2]Pos
-	check      [2]*checkInfo
+	check      [2]bool
 }
 
 // HasCheck reports whether there is currently a king in check
-// on the board and if so, returns a *checkInfo.
-func (b *Board) HasCheck() (*checkInfo, bool) {
-	if b.check[White] != nil {
-		return b.check[White], true
+// on the board.
+func (b *Board) HasCheck() (bool, Color) {
+	if b.check[Black] {
+		return true, Black
 	}
-	if b.check[Black] != nil {
-		return b.check[Black], true
+	if b.check[White] {
+		return true, White
 	}
-	return nil, false
-}
-
-func (c *checkInfo) String() string {
-	color := "white"
-	if c.Color == Black {
-		color = "black"
-	}
-	return fmt.Sprintf("%s is now in check from the %s at %s",
-		color,
-		c.ByPiece.Name,
-		c.FromPos,
-	)
+	return false, 2 // 2 for invalid color.
 }
 
 func NewBoard() *Board {
