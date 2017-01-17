@@ -65,8 +65,12 @@ func (b *Board) Move(p1, p2 Pos) error {
 	_, found = positions[kingPos]
 
 	// If the king's position was found as isn't blocked, it's a check.
-	if found && !b.moveBlocked(piece, p2, kingPos) {
-		b.check[piece.Color^1] = true
+	if found {
+		if !b.moveBlocked(piece, p2, kingPos) {
+			b.check[piece.Color^1] = true
+		}
+		b.kingLos[piece.Color^1] = append(b.kingLos[piece.Color^1],
+			piecePos{piece, p2})
 	}
 
 	// Move the piece to the new position.
@@ -80,13 +84,18 @@ func (b *Board) Move(p1, p2 Pos) error {
 		b.kings[piece.Color] = p2
 	}
 
+	// If color's king was in check and the current move
+	// is legal, the king will no longer be in check.
+	b.check[piece.Color] = false
+
 	// Update who's turn it is.
 	b.Turn ^= 1
 
 	return nil
 }
 
-// moveLegal checks to see whether the specified move is legal to make or not.
+// moveLegal checks to see whether the specified move is legal to
+// make or not.
 func (b *Board) moveLegal(piece *Piece, p1, p2 Pos) error {
 	// Get a list of all possible move positions that the
 	// piece can move to without restrictions.
@@ -103,7 +112,8 @@ func (b *Board) moveLegal(piece *Piece, p1, p2 Pos) error {
 		return ErrOccupiedPosition
 	}
 
-	// Pawn is moving yd+sideways, make sure there's an opponents piece at p2.
+	// Pawn is moving yd+sideways, make sure there's an opponents piece
+	// at p2.
 	if !found && piece.Name == Pawn && p1.X != p2.X {
 		return ErrInvalidPieceMove
 	}
@@ -111,6 +121,82 @@ func (b *Board) moveLegal(piece *Piece, p1, p2 Pos) error {
 	// Check if the move from p1 to p2 is blocked by any other pieces.
 	if b.moveBlocked(piece, p1, p2) {
 		return ErrMoveBlocked
+	}
+
+	// Make sure move doesn't put own king in check.
+	for i, pp := range b.kingLos[piece.Color] {
+		// Check if piece is still at pp.Pos
+		pc, found := b.posToPiece[pp.Pos]
+		if !found || pc != pp.Piece {
+			// Delete from b.kingLos[piece.Color]
+			kLos := b.kingLos[piece.Color]
+			kLos = append(kLos[:i], kLos[i:]...)
+			continue
+		}
+		positions := getMovePositions(pp.Piece, pp.Pos)
+		if _, p1found := positions[p1]; p1found {
+			// Remove the piece from it's current position on the board so
+			// that it doesn't block any pieces while checkin moveBlocked.
+			delete(b.posToPiece, p1)
+
+			blocked := b.moveBlocked(pp.Piece, pp.Pos, b.kings[piece.Color])
+
+			// Put the piece back at position p1.
+			b.posToPiece[p1] = piece
+
+			if !blocked {
+				return ErrMovingIntoCheck
+			}
+		}
+	}
+
+	// If color is in check, make sure that the piece can't
+	// be moved, unless it evades the current check.
+	if b.check[piece.Color] {
+		for i, pp := range b.kingLos[piece.Color] {
+			// Check if piece is still at pp.Pos
+			pc, found := b.posToPiece[pp.Pos]
+			if !found || pc != pp.Piece {
+				// Delete from b.kingLos[piece.Color]
+				kLos := b.kingLos[piece.Color]
+				kLos = append(kLos[:i], kLos[i:]...)
+				continue
+			}
+			positions := getMovePositions(pp.Piece, pp.Pos)
+			if _, p2found := positions[p2]; p2found {
+
+				// Get the piece currently at p2.
+				pc2 := b.posToPiece[p2]
+
+				// Move p1's piece to p2.
+				b.posToPiece[p2] = piece
+
+				// Check if pp.Piece is still causing check.
+				blocked := b.moveBlocked(pp.Piece, pp.Pos,
+					b.kings[piece.Color])
+
+				// Move p1's piece back to p1.
+				b.posToPiece[p1] = piece
+
+				// Delete p1's piece from p2.
+				delete(b.posToPiece, p2)
+
+				// If p2 originally contained a piece, put it back.
+				if pc2 != nil {
+					b.posToPiece[p2] = pc2
+				}
+
+				// If moving to p2 would block pp.Piece from
+				// causing check, continue.
+				if blocked {
+					continue
+				}
+
+				// If there would still be a check, return an
+				// ErrMoveWhileInCheck error.
+				return ErrMoveWhileInCheck
+			}
+		}
 	}
 
 	// If the piece is a King, see if by moving, it puts itself in check.

@@ -36,12 +36,18 @@ func (c Color) String() string {
 	}
 }
 
+type piecePos struct {
+	*Piece
+	Pos
+}
+
 // A Board describes a chess board.
 type Board struct {
 	Turn       Color
 	posToPiece map[Pos]*Piece
 	kings      [2]Pos
 	check      [2]bool
+	kingLos    [2][]piecePos
 }
 
 // HasCheck reports whether there is currently a king in check
@@ -85,6 +91,7 @@ func NewBoard() *Board {
 		Turn:       White,
 		posToPiece: posToPiece,
 		kings:      [2]Pos{White: {4, 0}, Black: {4, 7}},
+		kingLos:    [2][]piecePos{White: {}, Black: {}},
 	}
 }
 
@@ -101,7 +108,7 @@ var (
 )
 
 func (b *Board) Print() {
-	fmt.Print("\033[H\033[2J\n")
+	// fmt.Print("\033[H\033[2J\n")
 	for i1 := 0; i1 < 8; i1++ {
 		fmt.Print(color.RedString(" %d ", 8-i1))
 		for i2 := 0; i2 < 8; i2++ {
