@@ -227,7 +227,7 @@ func (b *Board) moveLegal(piece *Piece, p1, p2 Pos) error {
 // at position is being attacking by any pieces from color by.
 func (b *Board) positionAttacked(at Pos, by Color) bool {
 	for pos, piece := range b.posToPiece {
-		if piece.Color != by {
+		if piece.Color != by || (piece.Name == Pawn && pos.X == at.X) {
 			continue
 		}
 		positions := getMovePositions(piece, pos)

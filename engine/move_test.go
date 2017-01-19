@@ -467,8 +467,8 @@ func TestPositionAttacked(t *testing.T) {
 	}
 
 	attackedLocations := []string{
-		"c3", "d2", "d4", "f4", "e7", "f6", "g5", "h4",
-		"a3", "c5", "d6", "a5", "e4",
+		"c3", "d2", "d4", "f4", "e7", "f6",
+		"g5", "h4", "a3", "c5", "d6", "a5",
 	}
 	for _, loc := range attackedLocations {
 		pos, err := locToPos(loc)
@@ -477,6 +477,53 @@ func TestPositionAttacked(t *testing.T) {
 		}
 		if !b.positionAttacked(pos, Black) {
 			t.Errorf("expected position %s to be attacked", pos)
+		}
+	}
+}
+
+func TestPositionAttackedFromStart(t *testing.T) {
+	b := NewBoard()
+
+	whiteAttackedLocations := []string{
+		"a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
+	}
+	for _, loc := range whiteAttackedLocations {
+		pos, err := locToPos(loc)
+		if err != nil {
+			t.Error(err)
+		}
+		if !b.positionAttacked(pos, White) {
+			t.Errorf("expected position %s to be attacked", pos)
+		}
+	}
+
+	blackAttackedLocations := []string{
+		"a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
+	}
+	for _, loc := range blackAttackedLocations {
+		pos, err := locToPos(loc)
+		if err != nil {
+			t.Error(err)
+		}
+		if !b.positionAttacked(pos, Black) {
+			t.Errorf("expected position %s to be attacked", pos)
+		}
+	}
+
+	notAttackedForBoth := []string{
+		"a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4",
+		"a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5",
+	}
+	for _, loc := range notAttackedForBoth {
+		pos, err := locToPos(loc)
+		if err != nil {
+			t.Error(err)
+		}
+		if b.positionAttacked(pos, Black) {
+			t.Errorf("expected position %s to not be attacked", pos)
+		}
+		if b.positionAttacked(pos, White) {
+			t.Errorf("expected position %s to not be attacked", pos)
 		}
 	}
 }
