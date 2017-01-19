@@ -14,6 +14,9 @@ func main() {
 	b := engine.NewBoard()
 	b.Print()
 
+	// Animate a 4 move checkmate on the board.
+	// engine.FourMoveCheckmate(b, time.Second)
+
 	// blockageMovesStr1 := "d2d4,e7e5,e1d2,f8b4"
 	// blockageMovesStr2 := "a2a3,e7e5,a3a4,f8b4"
 	// blockageMovesStr3 := "d2d4,e7e5,d4e5,d8e7,e5e6,e7e6a"
@@ -23,17 +26,17 @@ func main() {
 	// setupBoardStr1 := "g2g4,a7a5,g4g5,a5a4,g5g6,a4a3"
 	// setupBoardStr2 := "a2a4,a7a5,a1a3,a8a6,a3c3,c7c5"
 	// setupBoardStr3 := "a2a4,d7d5,a1a3,d5d4,a3g3,d4d3"
-	setupStr1 := "e2e3,e7e5,b2b4,f8b4"
+	// setupStr1 := "e2e3,e7e5,b2b4,f8b4"
 	// setupStr1 := "e2e3,e7e5,b2b4,f8b4,a2a3,b4d2,e1e2,d7d5" // <- e3e4
 	// setupStr1 := "e2e3,e7e5,b2b4,f8b4,a2a3,b4d2,e1e2,d7d5,g2g4,c8g4" // <- f2f3
 
-	moves := strings.Split(setupStr1, ",")
-	for _, move := range moves {
-		if err := b.MoveByLocation(move[0:2], move[2:]); err != nil {
-			log.Fatalln(err)
-		}
-	}
-	b.Print()
+	// moves := strings.Split(setupStr1, ",")
+	// for _, move := range moves {
+	// 	if err := b.MoveByLocation(move[0:2], move[2:]); err != nil {
+	// 		log.Fatalln(err)
+	// 	}
+	// }
+	// b.Print()
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
