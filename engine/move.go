@@ -107,15 +107,18 @@ func (b *Board) moveLegal(piece *Piece, p1, p2 Pos) error {
 	// Check if there's a piece at position p2.
 	piece2, found := b.posToPiece[p2]
 
-	// Check if piece2 is on the same team as piece.
-	if found && piece.Color == piece2.Color {
-		return ErrOccupiedPosition
-	}
-
-	// Pawn is moving yd+sideways, make sure there's an opponents piece
-	// at p2.
-	if !found && piece.Name == Pawn && p1.X != p2.X {
-		return ErrInvalidPieceMove
+	// If there was a piece found at position p2.
+	if found {
+		// If piece2 is the color as piece, the position
+		// is occupied.
+		if piece.Color == piece2.Color {
+			return ErrOccupiedPosition
+		}
+		// If the piece is a pawn, it can't take a piece in
+		// front of it.
+		if piece.Name == Pawn && p1.X == p2.X {
+			return ErrOccupiedPosition
+		}
 	}
 
 	// Check if the move from p1 to p2 is blocked by any other pieces.
@@ -129,7 +132,8 @@ func (b *Board) moveLegal(piece *Piece, p1, p2 Pos) error {
 	// If not in check, then make sure move doesn't put own king in check.
 	if piece.Name != King {
 		for i, pp := range b.kingLos[piece.Color] {
-			// Check if piece is still at pp.Pos
+			// Check if piece is still at pp.Pos. If it isn't, delete
+			// pp.Piece from the kings line of sight slice for color.
 			pc, found := b.posToPiece[pp.Pos]
 			if !found || pc != pp.Piece {
 				// Delete from b.kingLos[piece.Color]
@@ -203,8 +207,8 @@ func (b *Board) moveLegal(piece *Piece, p1, p2 Pos) error {
 		// so that it doesn't block any pieces in position attacked.
 		delete(b.posToPiece, p1)
 
-		// Check if the position is being attacked
-		attacked := b.positionAttacked(p2, piece.Color)
+		// Check if the position is being attacked by the opponent's color.
+		attacked := b.positionAttacked(p2, piece.Color^1)
 
 		// Put the king back at position p1.
 		b.posToPiece[p1] = piece
@@ -219,9 +223,11 @@ func (b *Board) moveLegal(piece *Piece, p1, p2 Pos) error {
 	return nil
 }
 
-func (b *Board) positionAttacked(at Pos, c Color) bool {
+// positionAttacked returns a true or false based on whether the
+// at position is being attacking by any pieces from color by.
+func (b *Board) positionAttacked(at Pos, by Color) bool {
 	for pos, piece := range b.posToPiece {
-		if piece.Color == c {
+		if piece.Color != by {
 			continue
 		}
 		positions := getMovePositions(piece, pos)

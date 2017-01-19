@@ -248,8 +248,6 @@ func TestCantMoveKingIntoCheck(t *testing.T) {
 		{"c8", "g4"},
 	}
 
-	moveIntoCheckFrom, moveIntoCheckTo := "e1", "e2"
-
 	for _, move := range setupMoves {
 		if err := b.MoveByLocation(move.from, move.to); err != nil {
 			t.Fatalf("moving from %s to %s failed: %s",
@@ -257,6 +255,7 @@ func TestCantMoveKingIntoCheck(t *testing.T) {
 		}
 	}
 
+	moveIntoCheckFrom, moveIntoCheckTo := "e1", "e2"
 	err := b.MoveByLocation(moveIntoCheckFrom, moveIntoCheckTo)
 	if err == nil {
 		t.Errorf("expected to not be able to move from %s to %s",
@@ -276,7 +275,35 @@ func TestCantMovePieceIntoCheck(t *testing.T) {
 		{"f8", "b4"},
 	}
 
+	for _, move := range setupMoves {
+		if err := b.MoveByLocation(move.from, move.to); err != nil {
+			t.Fatalf("moving from %s to %s failed: %s",
+				move.from, move.to, err.Error())
+		}
+	}
+
 	moveIntoCheckFrom, moveIntoCheckTo := "d2", "d3"
+	err := b.MoveByLocation(moveIntoCheckFrom, moveIntoCheckTo)
+	if err == nil {
+		t.Errorf("expected to not be able to move from %s to %s",
+			moveIntoCheckFrom, moveIntoCheckTo)
+	}
+}
+
+func TestCanMovePieceAfterBlockingCheck(t *testing.T) {
+	b := NewBoard()
+
+	setupMoves := []struct {
+		from, to string
+	}{
+		{"a2", "a3"},
+		{"e7", "e5"},
+		{"a3", "a4"},
+		{"f8", "b4"},
+		// Block king's line of sight with another piece.
+		{"c2", "c3"},
+		{"a7", "a5"},
+	}
 
 	for _, move := range setupMoves {
 		if err := b.MoveByLocation(move.from, move.to); err != nil {
@@ -285,10 +312,11 @@ func TestCantMovePieceIntoCheck(t *testing.T) {
 		}
 	}
 
-	err := b.MoveByLocation(moveIntoCheckFrom, moveIntoCheckTo)
-	if err == nil {
-		t.Errorf("expected to not be able to move from %s to %s",
-			moveIntoCheckFrom, moveIntoCheckTo)
+	moveFrom, moveTo := "d2", "d3"
+	err := b.MoveByLocation(moveFrom, moveTo)
+	if err != nil {
+		t.Errorf("expected to be able to move from %s to %s",
+			moveFrom, moveTo)
 	}
 }
 
@@ -354,5 +382,101 @@ func TestCanMovePieceInCheckToUncheck(t *testing.T) {
 
 	if err := b.MoveByLocation("e7", "e6"); err != nil {
 		t.Error("expected to be able to move piece to block check")
+	}
+}
+
+func TestKingCanTakeCheckingPiece(t *testing.T) {
+	b := NewBoard()
+
+	moves := []struct {
+		from, to string
+	}{
+		{"e2", "e3"},
+		{"e7", "e5"},
+		{"b2", "b4"},
+		{"f8", "b4"},
+		{"a2", "a3"},
+		{"b4", "d2"},
+	}
+
+	for _, move := range moves {
+		if err := b.MoveByLocation(move.from, move.to); err != nil {
+			t.Fatalf("moving from %s to %s failed: %s",
+				move.from, move.to, err.Error())
+		}
+	}
+
+	hasCheck, _ := b.HasCheck()
+	if !hasCheck {
+		t.Error("expected board to have a check")
+	}
+
+	if err := b.MoveByLocation("e1", "d2"); err != nil {
+		t.Error("expected king to be able to take checking piece")
+	}
+}
+
+func TestPieceCanTakeCheckingPiece(t *testing.T) {
+	b := NewBoard()
+
+	moves := []struct {
+		from, to string
+	}{
+		{"e2", "e3"},
+		{"e7", "e5"},
+		{"b2", "b4"},
+		{"f8", "b4"},
+		{"a2", "a3"},
+		{"b4", "d2"},
+	}
+
+	for _, move := range moves {
+		if err := b.MoveByLocation(move.from, move.to); err != nil {
+			t.Fatalf("moving from %s to %s failed: %s",
+				move.from, move.to, err.Error())
+		}
+	}
+
+	hasCheck, _ := b.HasCheck()
+	if !hasCheck {
+		t.Error("expected board to have a check")
+	}
+
+	if err := b.MoveByLocation("c1", "d2"); err != nil {
+		t.Error("expected piece to be able to take checking piece")
+	}
+}
+
+func TestPositionAttacked(t *testing.T) {
+	b := NewBoard()
+
+	moves := []struct {
+		from, to string
+	}{
+		{"e2", "e3"},
+		{"e7", "e5"},
+		{"b2", "b4"},
+		{"f8", "b4"},
+	}
+
+	for _, move := range moves {
+		if err := b.MoveByLocation(move.from, move.to); err != nil {
+			t.Fatalf("moving from %s to %s failed: %s",
+				move.from, move.to, err.Error())
+		}
+	}
+
+	attackedLocations := []string{
+		"c3", "d2", "d4", "f4", "e7", "f6", "g5", "h4",
+		"a3", "c5", "d6", "a5", "e4",
+	}
+	for _, loc := range attackedLocations {
+		pos, err := locToPos(loc)
+		if err != nil {
+			t.Error(err)
+		}
+		if !b.positionAttacked(pos, Black) {
+			t.Errorf("expected position %s to be attacked", pos)
+		}
 	}
 }
