@@ -123,15 +123,20 @@ func (b *Board) moveLegal(piece *Piece, p1, p2 Pos) error {
 		return ErrMoveBlocked
 	}
 
-	// Make sure move doesn't put own king in check.
+	// If color is in check, make sure that the piece can't
+	// be moved, unless it evades the current check.
+	//
+	// If not in check, then make sure move doesn't put own king in check.
 	if piece.Name != King {
 		for i, pp := range b.kingLos[piece.Color] {
 			// Check if piece is still at pp.Pos
 			pc, found := b.posToPiece[pp.Pos]
 			if !found || pc != pp.Piece {
 				// Delete from b.kingLos[piece.Color]
-				kLos := b.kingLos[piece.Color]
-				kLos = append(kLos[:i], kLos[i:]...)
+				b.kingLos[piece.Color] = append(
+					b.kingLos[piece.Color][:i],
+					b.kingLos[piece.Color][i:]...,
+				)
 				continue
 			}
 
@@ -140,80 +145,53 @@ func (b *Board) moveLegal(piece *Piece, p1, p2 Pos) error {
 				continue
 			}
 
+			// If pp.Piece is not still attacking the king, delete it
+			// from the b.kingLos[piece.Color] slice.
 			positions := getMovePositions(pp.Piece, pp.Pos)
-			if _, p1found := positions[p1]; p1found {
-				// Simulate moving piece to p2 and then check if pp.Piece is
-				// blocked to the king or not.
-				//
-				// Get the piece at p2.
-				pc2 := b.posToPiece[p2]
-				// Move p1's piece to p2.
-				b.posToPiece[p2] = piece
-				// Delete piece from p1.
-				delete(b.posToPiece, p1)
-				// Check if pp.Piece is blocked to the king.
-				blocked := b.moveBlocked(pp.Piece, pp.Pos, b.kings[piece.Color])
-				// Move p1's piece back to p1.
-				b.posToPiece[p1] = piece
-				// Delete p1's piece from p2.
-				delete(b.posToPiece, p2)
-				// If p2 originally contained a piece, put it back.
-				if pc2 != nil {
-					b.posToPiece[p2] = pc2
-				}
-				if !blocked {
-					return ErrMovingIntoCheck
-				}
+			if _, kingFound := positions[b.kings[piece.Color]]; !kingFound {
+				// Delete from b.kingLos[piece.Color]
+				b.kingLos[piece.Color] = append(
+					b.kingLos[piece.Color][:i],
+					b.kingLos[piece.Color][i:]...,
+				)
+				continue
 			}
-		}
 
-		// If color is in check, make sure that the piece can't
-		// be moved, unless it evades the current check.
-		if b.check[piece.Color] {
-			for i, pp := range b.kingLos[piece.Color] {
-				// Check if piece is still at pp.Pos
-				pc, found := b.posToPiece[pp.Pos]
-				if !found || pc != pp.Piece {
-					// Delete from b.kingLos[piece.Color]
-					kLos := b.kingLos[piece.Color]
-					kLos = append(kLos[:i], kLos[i:]...)
-					continue
+			// If the piece isn't in pp.Piece's line of sight and
+			// it's not currently a check, the piece can move since
+			// it won't open up any new checks.
+			_, p1found := positions[p1]
+			if !b.check[piece.Color] && !p1found {
+				continue
+			}
+
+			// Simulate moving piece to p2 and then check if pp.Piece is
+			// blocked to the king or not.
+			//
+			// Get the piece at p2.
+			pc2 := b.posToPiece[p2]
+			// Move p1's piece to p2.
+			b.posToPiece[p2] = piece
+			// Delete piece from p1.
+			delete(b.posToPiece, p1)
+			// Check if pp.Piece is blocked to the king.
+			blocked := b.moveBlocked(pp.Piece, pp.Pos, b.kings[piece.Color])
+			// Move p1's piece back to p1.
+			b.posToPiece[p1] = piece
+			// Delete p1's piece from p2.
+			delete(b.posToPiece, p2)
+			// If p2 originally contained a piece, put it back.
+			if pc2 != nil {
+				b.posToPiece[p2] = pc2
+			}
+
+			if !blocked {
+				if b.check[piece.Color] {
+					// If there would still be a check, return an
+					// ErrMoveWhileInCheck error.
+					return ErrMoveWhileInCheck
 				}
-
-				// If piece is trying to take pp.Piece, continue.
-				if p2 == pp.Pos {
-					continue
-				}
-
-				// Simulate moving piece to p2 and then check if pp.Piece is
-				// blocked to the king or not.
-				//
-				// Get the piece at p2.
-				pc2 := b.posToPiece[p2]
-				// Move p1's piece to p2.
-				b.posToPiece[p2] = piece
-				// Delete piece from p1.
-				delete(b.posToPiece, p1)
-				// Check if pp.Piece is blocked to the king.
-				blocked := b.moveBlocked(pp.Piece, pp.Pos, b.kings[piece.Color])
-				// Move p1's piece back to p1.
-				b.posToPiece[p1] = piece
-				// Delete p1's piece from p2.
-				delete(b.posToPiece, p2)
-				// If p2 originally contained a piece, put it back.
-				if pc2 != nil {
-					b.posToPiece[p2] = pc2
-				}
-
-				// If moving to p2 would block pp.Piece from
-				// causing check, continue.
-				if blocked {
-					continue
-				}
-
-				// If there would still be a check, return an
-				// ErrMoveWhileInCheck error.
-				return ErrMoveWhileInCheck
+				return ErrMovingIntoCheck
 			}
 		}
 	}
