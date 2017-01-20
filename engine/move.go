@@ -269,6 +269,8 @@ func (b *Board) lineMoveBlocked(p1, p2 Pos, xd, yd int) bool {
 	return false
 }
 
+// moveBlocked checks whether there are any pieces inbetween piece
+// at position p1 and anything at position p2.
 func (b *Board) moveBlocked(piece *Piece, p1, p2 Pos) bool {
 	yd, xd := 1, 1
 	if p1.Y > p2.Y {
@@ -283,6 +285,7 @@ func (b *Board) moveBlocked(piece *Piece, p1, p2 Pos) bool {
 		if piece.Color == Black {
 			d = -1
 		}
+		// TODO: Fix for En Passant.
 		if p1.X != p2.X {
 			return false
 		}
