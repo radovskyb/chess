@@ -6,6 +6,7 @@ A simple chess engine written in Go.
 - Castling
 - Promotion
 - Checkmate
+- Stalemate
 - Draw
 - Resign
 - Undo
