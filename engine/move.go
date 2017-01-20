@@ -2,6 +2,8 @@ package engine
 
 import "fmt"
 
+// MoveByLocation is a convenience method that makes a move based
+// 2 location strings instead of Pos objects. For example, a2 to a4.
 func (b *Board) MoveByLocation(loc1, loc2 string) error {
 	pos1, err := locToPos(loc1)
 	if err != nil {
@@ -253,6 +255,8 @@ func (b *Board) positionAttacked(at Pos, by Color) bool {
 	return false
 }
 
+// diagMoveBlocked checks whether there are any pieces between
+// positions p1 and p2 in a diagonal line direction.
 func (b *Board) diagMoveBlocked(p1, p2 Pos, xd, yd int) bool {
 	for x, y := p1.X+xd, p1.Y+yd; x != p2.X && y != p2.Y; x, y = x+xd, y+yd {
 		_, blocked := b.posToPiece[Pos{x, y}]
@@ -263,6 +267,8 @@ func (b *Board) diagMoveBlocked(p1, p2 Pos, xd, yd int) bool {
 	return false
 }
 
+// lineMoveBlocked checks whether there are any pieces between
+// positions p1 and p2 in a straight line direction.
 func (b *Board) lineMoveBlocked(p1, p2 Pos, xd, yd int) bool {
 	switch {
 	case p1.Y != p2.Y:
@@ -283,8 +289,8 @@ func (b *Board) lineMoveBlocked(p1, p2 Pos, xd, yd int) bool {
 	return false
 }
 
-// moveBlocked checks whether there are any pieces inbetween piece
-// at position p1 and anything at position p2.
+// moveBlocked checks whether there are any pieces between piece at
+// at position p1 and position p2.
 func (b *Board) moveBlocked(piece *Piece, p1, p2 Pos) bool {
 	yd, xd := 1, 1
 	if p1.Y > p2.Y {
@@ -319,6 +325,9 @@ func (b *Board) moveBlocked(piece *Piece, p1, p2 Pos) bool {
 	return false
 }
 
+// doCastling goes through the steps to make sure that castling for king
+// is legal and if it is, does the castling move, or returns an error
+// explaining why it's not, if it isn't.
 func (b *Board) doCastling(king *Piece, p1, p2 Pos) error {
 	if b.check[king.Color] {
 		return ErrCastleWithKingInCheck
@@ -383,7 +392,8 @@ func (b *Board) doCastling(king *Piece, p1, p2 Pos) error {
 		// Remove the rook from the old position.
 		delete(b.posToPiece, Pos{7, p2.Y})
 	default:
-		return fmt.Errorf("cant castle king to position %s", p2)
+		// Shouldn't happen if called correctly.
+		return fmt.Errorf("can't castle king to position %s", p2)
 	}
 
 	// Move the king to p2.

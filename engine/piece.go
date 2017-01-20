@@ -13,6 +13,7 @@ const (
 	King
 )
 
+// String returns a string for a PieceName.
 func (n PieceName) String() string {
 	switch n {
 	case Pawn:
@@ -42,6 +43,7 @@ type Piece struct {
 	Color
 }
 
+// String returns a unicode symbol for the corresponding piece.
 func (p *Piece) String() string {
 	name, found := pieceNames[p.Name]
 	if !found {

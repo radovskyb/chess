@@ -30,6 +30,7 @@ const (
 	White
 )
 
+// String returns a string for a Color.
 func (c Color) String() string {
 	switch c {
 	case Black:
@@ -91,6 +92,7 @@ func (b *Board) HasCheck() (bool, Color) {
 	return false, 2 // 2 for invalid color.
 }
 
+// NewBoard creates an initializes a new chess board.
 func NewBoard() *Board {
 	posToPiece := map[Pos]*Piece{
 		// White
@@ -137,6 +139,7 @@ var (
 	printCyanBg = color.New(color.BgCyan).PrintfFunc()
 )
 
+// Print prints the board in terminals using ansi escape codes and colors.
 func (b *Board) Print() {
 	fmt.Print("\033[H\033[2J\n")
 	for i1 := 0; i1 < 8; i1++ {

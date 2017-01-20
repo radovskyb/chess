@@ -4,6 +4,7 @@ type Pos struct {
 	X, Y int
 }
 
+// String returns a Pos as a location string. Example: Pos{0, 0} -> A1.
 func (p Pos) String() string {
 	return string(p.X+'A') + string(p.Y+'1')
 }
