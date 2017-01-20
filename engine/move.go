@@ -1,5 +1,7 @@
 package engine
 
+import "fmt"
+
 func (b *Board) MoveByLocation(loc1, loc2 string) error {
 	pos1, err := locToPos(loc1)
 	if err != nil {
@@ -45,14 +47,26 @@ func (b *Board) Move(p1, p2 Pos) error {
 	}
 
 	// Check that it's that piece's color's turn.
-	if piece.Color != b.Turn {
+	if piece.Color != b.turn {
 		return ErrOpponentsPiece
+	}
+
+	// Castling.
+	if piece.Name == King && p1.X == 4 &&
+		(p2.Y == 0 || p2.Y == 7) &&
+		(p2.X == 2 || p2.X == 6) {
+		return b.doCastling(piece, p1, p2)
 	}
 
 	// Check if the move is legal to make.
 	if err := b.moveLegal(piece, p1, p2); err != nil {
 		return err
 	}
+
+	// Remove the piece from the old position p1 here, so it
+	// doesn't block when checking b.moveBlocked below if waiting
+	// to delete when adding piece to p2.
+	delete(b.posToPiece, p1)
 
 	// Get the move positions for the piece now at position p2.
 	positions := getMovePositions(piece, p2)
@@ -76,9 +90,6 @@ func (b *Board) Move(p1, p2 Pos) error {
 	// Move the piece to the new position.
 	b.posToPiece[p2] = piece
 
-	// Remove the piece from the old position.
-	delete(b.posToPiece, p1)
-
 	// Update current king's position.
 	if piece.Name == King {
 		b.kings[piece.Color] = p2
@@ -88,8 +99,11 @@ func (b *Board) Move(p1, p2 Pos) error {
 	// is legal, the king will no longer be in check.
 	b.check[piece.Color] = false
 
+	// Add piece to the hasMoved map.
+	b.hasMoved[piece] = struct{}{}
+
 	// Update who's turn it is.
-	b.Turn ^= 1
+	b.turn ^= 1
 
 	return nil
 }
@@ -303,4 +317,77 @@ func (b *Board) moveBlocked(piece *Piece, p1, p2 Pos) bool {
 		return b.diagMoveBlocked(p1, p2, xd, yd)
 	}
 	return false
+}
+
+func (b *Board) doCastling(king *Piece, p1, p2 Pos) error {
+	if b.check[king.Color] {
+		return ErrCastleWithKingInCheck
+	}
+
+	if _, found := b.hasMoved[king]; found {
+		return ErrKingOrRookMoved
+	}
+
+	switch p2.X {
+	case 2: // Queen-side.
+		// Move the queen-side rook to d1 or d8.
+		piece, found := b.posToPiece[Pos{0, p2.Y}]
+		if !found {
+			return ErrNoRookToCastleWith
+		}
+		if _, found := b.hasMoved[piece]; found {
+			return ErrKingOrRookMoved
+		}
+
+		// Make sure there's no pieces in between the king and the rook.
+		for x := 1; x < 4; x++ {
+			if _, found := b.posToPiece[Pos{x, p2.Y}]; found {
+				return ErrCastleWithPieceBetween
+			}
+		}
+
+		// Add the rook to it's new postion.
+		b.posToPiece[Pos{3, p2.Y}] = piece
+
+		// Remove the rook from the old position.
+		delete(b.posToPiece, Pos{0, p2.Y})
+	case 6: // King-side.
+		// Move the king-side rook to f1 or f8.
+		piece, found := b.posToPiece[Pos{7, p2.Y}]
+		if !found {
+			return ErrNoRookToCastleWith
+		}
+		if _, found := b.hasMoved[piece]; found {
+			return ErrKingOrRookMoved
+		}
+
+		// Make sure there's no pieces in between the king and the rook.
+		for x := 5; x < 7; x++ {
+			if _, found := b.posToPiece[Pos{x, p2.Y}]; found {
+				return ErrCastleWithPieceBetween
+			}
+		}
+
+		// Add the rook to it's new postion.
+		b.posToPiece[Pos{5, p2.Y}] = piece
+
+		// Remove the rook from the old position.
+		delete(b.posToPiece, Pos{7, p2.Y})
+	default:
+		return fmt.Errorf("cant castle king to position %s", p2)
+	}
+
+	// Move the king to p2.
+	b.posToPiece[p2] = king
+	// Remove the piece from the old position.
+	delete(b.posToPiece, p1)
+	// Update current king's position.
+	b.kings[king.Color] = p2
+	// Add king to the hasMoved map. The rook doesn't need to be
+	// added to the map since a king can only castle once.
+	b.hasMoved[king] = struct{}{}
+	// Update who's turn it is.
+	b.turn ^= 1
+
+	return nil
 }

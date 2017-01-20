@@ -6,7 +6,7 @@ func TestNewBoard(t *testing.T) {
 	b := NewBoard()
 
 	// The initial turn should be white.
-	if b.Turn != White {
+	if b.turn != White {
 		t.Error("expected turn to be white")
 	}
 

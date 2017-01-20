@@ -8,14 +8,18 @@ import (
 )
 
 var (
-	ErrInvalidLocation   = errors.New("error: location string is invalid")
-	ErrNoPieceAtPosition = errors.New("error: no piece at specified position")
-	ErrOpponentsPiece    = errors.New("error: piece belongs to opponent")
-	ErrInvalidPieceMove  = errors.New("error: invalid move for piece")
-	ErrOccupiedPosition  = errors.New("error: position is already occupied")
-	ErrMoveBlocked       = errors.New("error: move is blocked by another piece")
-	ErrMovingIntoCheck   = errors.New("error: move puts king in check")
-	ErrMoveWhileInCheck  = errors.New("error: can't move piece while in check")
+	ErrInvalidLocation        = errors.New("error: location string is invalid")
+	ErrNoPieceAtPosition      = errors.New("error: no piece at specified position")
+	ErrOpponentsPiece         = errors.New("error: piece belongs to opponent")
+	ErrInvalidPieceMove       = errors.New("error: invalid move for piece")
+	ErrOccupiedPosition       = errors.New("error: position is already occupied")
+	ErrMoveBlocked            = errors.New("error: move is blocked by another piece")
+	ErrMovingIntoCheck        = errors.New("error: move puts king in check")
+	ErrMoveWhileInCheck       = errors.New("error: can't move piece while in check")
+	ErrNoRookToCastleWith     = errors.New("error: rook not found to castle with")
+	ErrKingOrRookMoved        = errors.New("error: king or rook has already moved before")
+	ErrCastleWithKingInCheck  = errors.New("error: castle while king is in check")
+	ErrCastleWithPieceBetween = errors.New("error: castle with pieces between king and rook")
 )
 
 type Color uint8
@@ -44,11 +48,34 @@ type piecePos struct {
 
 // A Board describes a chess board.
 type Board struct {
-	Turn       Color
+	// turn holds a color value for who's turn it is.
+	turn Color
+
+	// posToPiece holds a map of positions to pieces on the board.
 	posToPiece map[Pos]*Piece
-	check      [2]bool
-	kings      [2]Pos        // kings holds both of the king's positions on the board.
-	kingLos    [2][]piecePos // kingLos holds pieces that have a line of sight to a king.
+
+	// check holds a true or false based on whether either king
+	// is currently in check or not.
+	check [2]bool
+
+	// kings holds both of the king's positions on the board.
+	kings [2]Pos
+
+	// kingLos holds pieces that have a line of sight to a king.
+	kingLos [2][]piecePos
+
+	// TODO: history
+	//
+	// history holds a full ordered history of moves that have been made.
+	// history []piecePos
+
+	// hasMoved holds any pieces that have already moved in the game.
+	//
+	// TODO: Must be able undo has moved for piece when history is
+	//		 implemented if not moved prior to undo.
+	//		 Count moves for piece? Example: map[*Piece]int, by adding each piece
+	//		 on new board, then incrementing/decrementing for moves/undos.
+	hasMoved map[*Piece]struct{}
 }
 
 // HasCheck reports whether there is currently a king in check
@@ -89,10 +116,11 @@ func NewBoard() *Board {
 		posToPiece[Pos{i, 6}] = &Piece{Pawn, Black}
 	}
 	return &Board{
-		Turn:       White,
+		turn:       White,
 		posToPiece: posToPiece,
 		kings:      [2]Pos{White: {4, 0}, Black: {4, 7}},
 		kingLos:    [2][]piecePos{White: {}, Black: {}},
+		hasMoved:   map[*Piece]struct{}{},
 	}
 }
 

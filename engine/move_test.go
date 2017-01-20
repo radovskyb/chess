@@ -94,18 +94,13 @@ func TestMoveLegal(t *testing.T) {
 func TestMoveBlocked(t *testing.T) {
 	b := NewBoard()
 
-	type pieceToPos struct {
-		piece *Piece
-		pos   Pos
-	}
-
 	testCases := []struct {
-		setupMoves []pieceToPos
+		setupMoves []piecePos
 		blockTests [][2]Pos
 	}{
 		// White Pawn
 		{
-			[]pieceToPos{
+			[]piecePos{
 				{&Piece{Pawn, White}, Pos{4, 3}},
 				{&Piece{Pawn, White}, Pos{4, 4}}, // Pawn on top.
 			},
@@ -115,7 +110,7 @@ func TestMoveBlocked(t *testing.T) {
 		},
 		// Black Pawn
 		{
-			[]pieceToPos{
+			[]piecePos{
 				{&Piece{Pawn, Black}, Pos{4, 3}},
 				{&Piece{Pawn, Black}, Pos{4, 2}}, // Pawn on bottom.
 			},
@@ -125,7 +120,7 @@ func TestMoveBlocked(t *testing.T) {
 		},
 		// Rook
 		{
-			[]pieceToPos{
+			[]piecePos{
 				{&Piece{Rook, White}, Pos{4, 3}},
 				{&Piece{Pawn, White}, Pos{3, 3}}, // Pawn on left.
 				{&Piece{Pawn, White}, Pos{5, 3}}, // Pawn on right.
@@ -141,7 +136,7 @@ func TestMoveBlocked(t *testing.T) {
 		},
 		// Bishop
 		{
-			[]pieceToPos{
+			[]piecePos{
 				{&Piece{Bishop, White}, Pos{3, 3}},
 				{&Piece{Pawn, White}, Pos{4, 4}}, // Pawn up+right.
 				{&Piece{Pawn, White}, Pos{2, 4}}, // Pawn up+left.
@@ -157,7 +152,7 @@ func TestMoveBlocked(t *testing.T) {
 		},
 		// Queen
 		{
-			[]pieceToPos{
+			[]piecePos{
 				{&Piece{Queen, White}, Pos{3, 3}},
 				// Diagonal blockages.
 				{&Piece{Pawn, White}, Pos{4, 4}}, // Pawn up+right.
@@ -188,7 +183,7 @@ func TestMoveBlocked(t *testing.T) {
 		b.clear() // clear the board
 
 		for _, move := range tc.setupMoves {
-			b.posToPiece[move.pos] = move.piece
+			b.posToPiece[move.Pos] = move.Piece
 		}
 		for _, positions := range tc.blockTests {
 			piece, found := b.posToPiece[positions[0]]
@@ -203,7 +198,7 @@ func TestMoveBlocked(t *testing.T) {
 	}
 }
 
-// func TestMoveNotBlocked(t *testing.T) {}
+// TODO: func TestMoveNotBlocked(t *testing.T) {}
 
 func TestHasCheck(t *testing.T) {
 	b := NewBoard()
@@ -526,4 +521,328 @@ func TestPositionAttackedFromStart(t *testing.T) {
 			t.Errorf("expected position %s to not be attacked", pos)
 		}
 	}
+}
+
+func TestCastlingQueenSide(t *testing.T) {
+	b := NewBoard()
+	b.clear()
+
+	// White pieces.
+	wK := &Piece{King, White}
+	wR := &Piece{Rook, White}
+
+	// Black pieces.
+	bK := &Piece{King, Black}
+	bR := &Piece{Rook, Black}
+
+	// Add king and rook on the queen-side for white.
+	b.posToPiece[Pos{4, 0}] = wK
+	b.posToPiece[Pos{0, 0}] = wR
+
+	// Add king and rook on the queen-side for black.
+	b.posToPiece[Pos{4, 7}] = bK
+	b.posToPiece[Pos{0, 7}] = bR
+
+	// Castle white by moving the king over 2 squares queen-side.
+	if err := b.MoveByLocation("e1", "c1"); err != nil {
+		t.Error(err)
+	}
+
+	// Castle black by moving the king over 2 squares queen-side.
+	if err := b.MoveByLocation("e8", "c8"); err != nil {
+		t.Error(err)
+	}
+
+	// Check that the white king is in the right place.
+	piece, err := b.GetPieceAt("c1")
+	if err != nil {
+		t.Error(err)
+	}
+	if piece != wK {
+		t.Errorf("expected piece to be white king, got %s", piece)
+	}
+	// Check that the white rook is in the right place.
+	piece, err = b.GetPieceAt("d1")
+	if err != nil {
+		t.Error(err)
+	}
+	if piece != wR {
+		t.Errorf("expected piece to be white rook, got %s", piece)
+	}
+
+	// Check that the black king is in the right place.
+	piece, err = b.GetPieceAt("c8")
+	if err != nil {
+		t.Error(err)
+	}
+	if piece != bK {
+		t.Errorf("expected piece to be black king, got %s", piece)
+	}
+	// Check that the black rook is in the right place.
+	piece, err = b.GetPieceAt("d8")
+	if err != nil {
+		t.Error(err)
+	}
+	if piece != bR {
+		t.Errorf("expected piece to be black rook, got %s", piece)
+	}
+}
+
+func TestCastlingKingSide(t *testing.T) {
+	b := NewBoard()
+	b.clear()
+
+	// White pieces.
+	wK := &Piece{King, White}
+	wR := &Piece{Rook, White}
+
+	// Black pieces.
+	bK := &Piece{King, Black}
+	bR := &Piece{Rook, Black}
+
+	// Add king and rook on the king-side for white.
+	b.posToPiece[Pos{4, 0}] = wK
+	b.posToPiece[Pos{7, 0}] = wR
+
+	// Add king and rook on the king-side for black.
+	b.posToPiece[Pos{4, 7}] = bK
+	b.posToPiece[Pos{7, 7}] = bR
+
+	// Castle white by moving the king over 2 squares king-side.
+	if err := b.MoveByLocation("e1", "g1"); err != nil {
+		t.Error(err)
+	}
+
+	// Castle black by moving the king over 2 squares king-side.
+	if err := b.MoveByLocation("e8", "g8"); err != nil {
+		t.Error(err)
+	}
+
+	// Check that the white king is in the right place.
+	piece, err := b.GetPieceAt("g1")
+	if err != nil {
+		t.Error(err)
+	}
+	if piece != wK {
+		t.Errorf("expected piece to be white king, got %s", piece)
+	}
+	// Check that the white rook is in the right place.
+	piece, err = b.GetPieceAt("f1")
+	if err != nil {
+		t.Error(err)
+	}
+	if piece != wR {
+		t.Errorf("expected piece to be white rook, got %s", piece)
+	}
+
+	// Check that the black king is in the right place.
+	piece, err = b.GetPieceAt("g8")
+	if err != nil {
+		t.Error(err)
+	}
+	if piece != bK {
+		t.Errorf("expected piece to be black king, got %s", piece)
+	}
+	// Check that the black rook is in the right place.
+	piece, err = b.GetPieceAt("f8")
+	if err != nil {
+		t.Error(err)
+	}
+	if piece != bR {
+		t.Errorf("expected piece to be black rook, got %s", piece)
+	}
+}
+
+func TestCantCastleIfKingMoved(t *testing.T) {
+	b := NewBoard()
+	b.clear()
+
+	// White pieces.
+	wK := &Piece{King, White}
+	wR := &Piece{Rook, White}
+
+	// Black pieces.
+	bK := &Piece{King, Black}
+	bR := &Piece{Rook, Black}
+
+	// Add king and rook on the quuen-side for white.
+	b.posToPiece[Pos{4, 0}] = wK
+	b.posToPiece[Pos{0, 0}] = wR
+
+	// Add king and rook on the queen-side for black.
+	b.posToPiece[Pos{4, 7}] = bK
+	b.posToPiece[Pos{0, 7}] = bR
+
+	// Move the white king.
+	if err := b.MoveByLocation("e1", "d1"); err != nil {
+		t.Error(err)
+	}
+
+	// Move the black king.
+	if err := b.MoveByLocation("e8", "d8"); err != nil {
+		t.Error(err)
+	}
+
+	// Move the white king back.
+	if err := b.MoveByLocation("d1", "e1"); err != nil {
+		t.Error(err)
+	}
+
+	// Move the black king back.
+	if err := b.MoveByLocation("d8", "e8"); err != nil {
+		t.Error(err)
+	}
+
+	// Try to castle white.
+	if err := b.MoveByLocation("e1", "c1"); err != ErrKingOrRookMoved {
+		t.Error("shouldn't be able to castle white, king has moved before")
+	}
+
+	// Switch to black's turn.
+	b.turn ^= 1
+
+	// Try to castle black.
+	if err := b.MoveByLocation("e8", "c8"); err != ErrKingOrRookMoved {
+		t.Error("shouldn't be able to castle black, king has moved before")
+	}
+}
+
+func TestCantCastleIfRookMoved(t *testing.T) {
+	b := NewBoard()
+	b.clear()
+
+	// White pieces.
+	wK := &Piece{King, White}
+	wR := &Piece{Rook, White}
+
+	// Black pieces.
+	bK := &Piece{King, Black}
+	bR := &Piece{Rook, Black}
+
+	// Add king and rook on the quuen-side for white.
+	b.posToPiece[Pos{4, 0}] = wK
+	b.posToPiece[Pos{0, 0}] = wR
+
+	// Add king and rook on the queen-side for black.
+	b.posToPiece[Pos{4, 7}] = bK
+	b.posToPiece[Pos{0, 7}] = bR
+
+	// Move the white rook.
+	if err := b.MoveByLocation("a1", "b1"); err != nil {
+		t.Error(err)
+	}
+
+	// Move the black rook.
+	if err := b.MoveByLocation("a8", "b8"); err != nil {
+		t.Error(err)
+	}
+
+	// Move the white king back.
+	if err := b.MoveByLocation("b1", "a1"); err != nil {
+		t.Error(err)
+	}
+
+	// Move the black king back.
+	if err := b.MoveByLocation("b8", "a8"); err != nil {
+		t.Error(err)
+	}
+
+	// Try to castle white.
+	if err := b.MoveByLocation("e1", "c1"); err != ErrKingOrRookMoved {
+		t.Error("shouldn't be able to castle white, king has moved before")
+	}
+
+	// Switch to black's turn.
+	b.turn ^= 1
+
+	// Try to castle black.
+	if err := b.MoveByLocation("e8", "c8"); err != ErrKingOrRookMoved {
+		t.Error("shouldn't be able to castle black, king has moved before")
+	}
+}
+
+func TestCantCastleWhiteIfKingInCheck(t *testing.T) {
+	b := NewBoard()
+	b.clear()
+
+	// Add king and rook on the quuen-side for white.
+	b.posToPiece[Pos{4, 0}] = &Piece{King, White}
+	b.posToPiece[Pos{0, 0}] = &Piece{Rook, White}
+
+	b.turn ^= 1
+
+	// Put black rook on board and move it to put white king in check.
+	b.posToPiece[Pos{4, 4}] = &Piece{Rook, Black}
+	if err := b.Move(Pos{4, 4}, Pos{4, 3}); err != nil {
+		t.Error(err)
+	}
+
+	// Try to castle white.
+	if err := b.MoveByLocation("e1", "c1"); err != ErrCastleWithKingInCheck {
+		t.Error("shouldn't be able to castle white, king is in check")
+	}
+}
+
+func TestCantCastleBlackIfKingInCheck(t *testing.T) {
+	b := NewBoard()
+	b.clear()
+
+	// Add king and rook on the queen-side for black.
+	b.posToPiece[Pos{4, 7}] = &Piece{King, Black}
+	b.posToPiece[Pos{0, 7}] = &Piece{Rook, Black}
+
+	// Put white rook on board and move it to put black king in check.
+	b.posToPiece[Pos{4, 4}] = &Piece{Rook, White}
+	if err := b.Move(Pos{4, 4}, Pos{4, 3}); err != nil {
+		t.Error(err)
+	}
+
+	// Try to castle black.
+	if err := b.MoveByLocation("e8", "c8"); err != ErrCastleWithKingInCheck {
+		t.Error("shouldn't be able to castle black, king is in check")
+	}
+}
+
+func TestCantCastleIfPiecesBetweenKingAndRook(t *testing.T) {
+	b := NewBoard()
+	b.clear()
+
+	// Add king and rook on the queen-side for white.
+	b.posToPiece[Pos{4, 0}] = &Piece{King, White}
+	b.posToPiece[Pos{0, 0}] = &Piece{Rook, White}
+	b.posToPiece[Pos{7, 0}] = &Piece{Rook, White}
+
+	// Put a bishop between the king and the rook on both sides.
+	b.posToPiece[Pos{2, 0}] = &Piece{Bishop, White}
+	b.posToPiece[Pos{6, 0}] = &Piece{Bishop, White}
+
+	// Try to castle white queen-side.
+	if err := b.MoveByLocation("e1", "c1"); err != ErrCastleWithPieceBetween {
+		t.Error("shouldn't be able to castle white with a piece in the way")
+	}
+
+	// Try to castle white king-side.
+	if err := b.MoveByLocation("e1", "g1"); err != ErrCastleWithPieceBetween {
+		t.Error("shouldn't be able to castle white with a piece in the way")
+	}
+
+	b.turn ^= 1
+
+	// Add king and rook on the queen-side for black.
+	b.posToPiece[Pos{4, 7}] = &Piece{King, Black}
+	b.posToPiece[Pos{0, 7}] = &Piece{Rook, Black}
+	b.posToPiece[Pos{7, 7}] = &Piece{Rook, Black}
+
+	// Put a bishop between the king and the rook on both sides.
+	b.posToPiece[Pos{2, 7}] = &Piece{Bishop, Black}
+	b.posToPiece[Pos{6, 7}] = &Piece{Bishop, Black}
+
+	// Try to castle black king-side.
+	if err := b.MoveByLocation("e8", "g8"); err != ErrCastleWithPieceBetween {
+		t.Error("shouldn't be able to castle black with a piece in the way")
+	}
+}
+
+func TestCantCastleIfKingMovesThroughCheck(t *testing.T) {
+
 }
