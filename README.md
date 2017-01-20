@@ -1,13 +1,12 @@
 # Chess
-A simple chess engine written in Go.
+A chess game written in Go.
 
 # Todo
 - En Passant
-- Castling
 - Promotion
 - Checkmate
 - Stalemate
 - Draw
-- Resign
-- Undo
+- Resign (for cmd)
+- Undo?
 - Etc.
