@@ -20,6 +20,7 @@ var (
 	ErrKingOrRookMoved        = errors.New("error: king or rook has already moved before")
 	ErrCastleWithKingInCheck  = errors.New("error: castle while king is in check")
 	ErrCastleWithPieceBetween = errors.New("error: castle with pieces between king and rook")
+	ErrCastleMoveThroughCheck = errors.New("error: castle moving king through check")
 )
 
 type Color uint8

@@ -346,6 +346,12 @@ func (b *Board) doCastling(king *Piece, p1, p2 Pos) error {
 			}
 		}
 
+		for x := 2; x < 4; x++ {
+			if b.positionAttacked(Pos{x, p2.Y}, piece.Color^1) {
+				return ErrCastleMoveThroughCheck
+			}
+		}
+
 		// Add the rook to it's new postion.
 		b.posToPiece[Pos{3, p2.Y}] = piece
 
@@ -365,6 +371,9 @@ func (b *Board) doCastling(king *Piece, p1, p2 Pos) error {
 		for x := 5; x < 7; x++ {
 			if _, found := b.posToPiece[Pos{x, p2.Y}]; found {
 				return ErrCastleWithPieceBetween
+			}
+			if b.positionAttacked(Pos{x, p2.Y}, piece.Color^1) {
+				return ErrCastleMoveThroughCheck
 			}
 		}
 
