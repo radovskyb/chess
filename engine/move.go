@@ -56,6 +56,7 @@ func (b *Board) makeMove(piece *Piece, from, to Pos) {
 	// Increment the history move index number.
 	b.moveNum++
 
+	// Add the new move to b.history.
 	b.history = append(b.history, m)
 
 	// If the history's length has already reached b.moveNum, it means
@@ -75,6 +76,7 @@ func (b *Board) UndoMove() error {
 		return ErrHistoryIsEmpty
 	}
 
+	// Get the move from b.history at position b.moveNum.
 	move := b.history[b.moveNum]
 
 	// Put the move's piece back to position from.
