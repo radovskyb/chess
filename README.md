@@ -8,5 +8,3 @@ A chess game written in Go.
 - Stalemate
 - Draw
 - Resign (for cmd)
-- Undo?
-- Etc.

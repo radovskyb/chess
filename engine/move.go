@@ -2,6 +2,112 @@ package engine
 
 import "fmt"
 
+type move struct {
+	piece    *Piece
+	from     Pos
+	to       Pos
+	captured *Piece
+}
+
+func (b *Board) makeMove(piece *Piece, from, to Pos) {
+	// Create a new move.
+	m := &move{
+		piece:    piece,
+		from:     from,
+		to:       to,
+		captured: b.posToPiece[to],
+	}
+
+	// Remove the piece from the old position from over here, so it
+	// doesn't block when checking b.moveBlocked below if waiting
+	// to delete when adding piece to position to.
+	delete(b.posToPiece, from)
+
+	// Get the move positions for the piece now at position to.
+	positions := getMovePositions(piece, to)
+
+	// Get the positions of the opponents king.
+	kingPos := b.kings[piece.Color^1]
+
+	// Check if the king's position is found within any of the
+	// move positions for piece at position to.
+	_, found := positions[kingPos]
+
+	// If the king's position was found as isn't blocked, it's a check.
+	if found {
+		if !b.moveBlocked(piece, to, kingPos) {
+			b.check[piece.Color^1] = true
+		}
+		b.kingLos[piece.Color^1] = append(b.kingLos[piece.Color^1],
+			piecePos{piece, to})
+	}
+
+	// Move the piece to the new position.
+	b.posToPiece[to] = piece
+
+	// Update current king's position.
+	if piece.Name == King {
+		b.kings[piece.Color] = to
+	}
+
+	// Increment b.hasMoved for piece.
+	b.hasMoved[piece]++
+
+	// Increment the history move index number.
+	b.moveNum++
+
+	b.history = append(b.history, m)
+
+	// If the history's length has already reached b.moveNum, it means
+	// that the previous move was an undo and since this new move will now
+	// create a new forward history, delete any moves after this move in the
+	// history slice, since they're no longer relevant history.
+	if len(b.history) > b.moveNum {
+		b.history = b.history[:b.moveNum+1]
+	}
+
+	// Update who's turn it is.
+	b.turn ^= 1
+}
+
+func (b *Board) UndoMove() error {
+	if b.moveNum < 0 {
+		return ErrHistoryIsEmpty
+	}
+
+	move := b.history[b.moveNum]
+
+	// Put the move's piece back to position from.
+	b.posToPiece[move.from] = move.piece
+
+	// Delete the piece from position to.
+	delete(b.posToPiece, move.to)
+
+	// Put anything that was captured, back at position to.
+	if move.captured != nil {
+		b.posToPiece[move.to] = move.captured
+	}
+
+	// Decrement b.hasMoved for move.piece.
+	b.hasMoved[move.piece]--
+
+	// If piece is a king, set it's position back to from.
+	if move.piece.Name == King {
+		b.kings[move.piece.Color] = move.from
+	}
+
+	// Set the turn to piece's color.
+	b.turn = move.piece.Color
+
+	// Decrement b.moveNum.
+	b.moveNum--
+
+	return nil
+}
+
+// TODO: Redo move in history.
+// func (b *Board) RedoMove() error {}
+
 // MoveByLocation is a convenience method that makes a move based
 // 2 location strings instead of Pos objects. For example, a2 to a4.
 func (b *Board) MoveByLocation(loc1, loc2 string) error {
@@ -32,8 +138,7 @@ func (b *Board) moveByLocation(loc1, loc2 string) error {
 	if !found {
 		return ErrNoPieceAtPosition
 	}
-	b.posToPiece[pos2] = piece
-	delete(b.posToPiece, pos1)
+	b.makeMove(piece, pos1, pos2)
 	return nil
 }
 
@@ -65,47 +170,12 @@ func (b *Board) Move(p1, p2 Pos) error {
 		return err
 	}
 
-	// Remove the piece from the old position p1 here, so it
-	// doesn't block when checking b.moveBlocked below if waiting
-	// to delete when adding piece to p2.
-	delete(b.posToPiece, p1)
-
-	// Get the move positions for the piece now at position p2.
-	positions := getMovePositions(piece, p2)
-
-	// Get the positions of the opponents king.
-	kingPos := b.kings[piece.Color^1]
-
-	// Check if the king's position is found within any of the
-	// move positions for piece at p2.
-	_, found = positions[kingPos]
-
-	// If the king's position was found as isn't blocked, it's a check.
-	if found {
-		if !b.moveBlocked(piece, p2, kingPos) {
-			b.check[piece.Color^1] = true
-		}
-		b.kingLos[piece.Color^1] = append(b.kingLos[piece.Color^1],
-			piecePos{piece, p2})
-	}
-
-	// Move the piece to the new position.
-	b.posToPiece[p2] = piece
-
-	// Update current king's position.
-	if piece.Name == King {
-		b.kings[piece.Color] = p2
-	}
+	// Make the move on the board.
+	b.makeMove(piece, p1, p2)
 
 	// If color's king was in check and the current move
 	// is legal, the king will no longer be in check.
 	b.check[piece.Color] = false
-
-	// Add piece to the hasMoved map.
-	b.hasMoved[piece] = struct{}{}
-
-	// Update who's turn it is.
-	b.turn ^= 1
 
 	return nil
 }
@@ -333,7 +403,7 @@ func (b *Board) doCastling(king *Piece, p1, p2 Pos) error {
 		return ErrCastleWithKingInCheck
 	}
 
-	if _, found := b.hasMoved[king]; found {
+	if i, found := b.hasMoved[king]; found && i > 0 {
 		return ErrKingOrRookMoved
 	}
 
@@ -344,7 +414,7 @@ func (b *Board) doCastling(king *Piece, p1, p2 Pos) error {
 		if !found {
 			return ErrNoRookToCastleWith
 		}
-		if _, found := b.hasMoved[piece]; found {
+		if i, found := b.hasMoved[piece]; found && i > 0 {
 			return ErrKingOrRookMoved
 		}
 
@@ -372,7 +442,7 @@ func (b *Board) doCastling(king *Piece, p1, p2 Pos) error {
 		if !found {
 			return ErrNoRookToCastleWith
 		}
-		if _, found := b.hasMoved[piece]; found {
+		if i, found := b.hasMoved[piece]; found && i > 0 {
 			return ErrKingOrRookMoved
 		}
 
@@ -396,17 +466,11 @@ func (b *Board) doCastling(king *Piece, p1, p2 Pos) error {
 		return fmt.Errorf("can't castle king to position %s", p2)
 	}
 
-	// Move the king to p2.
-	b.posToPiece[p2] = king
-	// Remove the piece from the old position.
-	delete(b.posToPiece, p1)
-	// Update current king's position.
-	b.kings[king.Color] = p2
-	// Add king to the hasMoved map. The rook doesn't need to be
-	// added to the map since a king can only castle once.
-	b.hasMoved[king] = struct{}{}
-	// Update who's turn it is.
-	b.turn ^= 1
+	// Move the king to it's new position.
+	//
+	// The history will be able to tell that it was a castling
+	// by which positions the king moved from and where to.
+	b.makeMove(king, p1, p2)
 
 	return nil
 }

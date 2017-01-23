@@ -41,6 +41,14 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		text := strings.TrimSpace(scanner.Text())
+		if text == "u" {
+			if err := b.UndoMove(); err != nil {
+				fmt.Println(err)
+				continue
+			}
+			b.Print()
+			continue
+		}
 		var loc1, loc2 string
 		switch len(text) {
 		case 4:

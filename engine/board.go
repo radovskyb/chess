@@ -21,6 +21,7 @@ var (
 	ErrCastleWithKingInCheck  = errors.New("error: castle while king is in check")
 	ErrCastleWithPieceBetween = errors.New("error: castle with pieces between king and rook")
 	ErrCastleMoveThroughCheck = errors.New("error: castle moving king through check")
+	ErrHistoryIsEmpty         = errors.New("error: move history is empty")
 )
 
 type Color uint8
@@ -66,18 +67,15 @@ type Board struct {
 	// kingLos holds pieces that have a line of sight to a king.
 	kingLos [2][]piecePos
 
-	// TODO: history
-	//
-	// history holds a full ordered history of moves that have been made.
-	// history []piecePos
+	// history contains a slice of all moved that have occured
+	// on the board.
+	history []*move
+
+	// moveNum stores the current move index in the history slice.
+	moveNum int
 
 	// hasMoved holds any pieces that have already moved in the game.
-	//
-	// TODO: Must be able undo has moved for piece when history is
-	//		 implemented if not moved prior to undo.
-	//		 Count moves for piece? Example: map[*Piece]int, by adding each piece
-	//		 on new board, then incrementing/decrementing for moves/undos.
-	hasMoved map[*Piece]struct{}
+	hasMoved map[*Piece]int
 }
 
 // HasCheck reports whether there is currently a king in check
@@ -118,12 +116,19 @@ func NewBoard() *Board {
 		posToPiece[Pos{i, 1}] = &Piece{Pawn, White}
 		posToPiece[Pos{i, 6}] = &Piece{Pawn, Black}
 	}
+	// Create and initalize a new map for b.hasMoved.
+	hasMoved := make(map[*Piece]int)
+	for _, piece := range posToPiece {
+		hasMoved[piece] = 0
+	}
 	return &Board{
 		turn:       White,
 		posToPiece: posToPiece,
 		kings:      [2]Pos{White: {4, 0}, Black: {4, 7}},
 		kingLos:    [2][]piecePos{White: {}, Black: {}},
-		hasMoved:   map[*Piece]struct{}{},
+		history:    []*move{}, // Create a new blank history.
+		moveNum:    -1,
+		hasMoved:   hasMoved,
 	}
 }
 
