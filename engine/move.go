@@ -433,7 +433,7 @@ func (b *Board) doCastling(king *Piece, p1, p2 Pos) error {
 			}
 		}
 
-		// Add the rook to it's new postion.
+		// Add the rook to it's new position.
 		b.posToPiece[Pos{3, p2.Y}] = piece
 
 		// Remove the rook from the old position.
@@ -458,7 +458,7 @@ func (b *Board) doCastling(king *Piece, p1, p2 Pos) error {
 			}
 		}
 
-		// Add the rook to it's new postion.
+		// Add the rook to it's new position.
 		b.posToPiece[Pos{5, p2.Y}] = piece
 
 		// Remove the rook from the old position.

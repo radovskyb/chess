@@ -68,7 +68,7 @@ type Board struct {
 	// kingLos holds pieces that have a line of sight to a king.
 	kingLos [2][]piecePos
 
-	// history contains a slice of all moved that have occured
+	// history contains a slice of all moves that have occurred
 	// on the board.
 	history []*move
 
