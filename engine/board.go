@@ -3,6 +3,7 @@ package engine
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/fatih/color"
 )
@@ -76,6 +77,15 @@ type Board struct {
 
 	// hasMoved holds any pieces that have already moved in the game.
 	hasMoved map[*Piece]int
+}
+
+// History returns a string combining all of the moves currently
+// stored in the board's history in the format of l1l2,l1l2 etc.
+func (b *Board) History() (history string) {
+	for _, m := range b.history {
+		history += fmt.Sprintf("%s%s,", m.from, m.to)
+	}
+	return strings.TrimRight(history, ",")
 }
 
 // HasCheck reports whether there is currently a king in check

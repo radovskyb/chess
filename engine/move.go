@@ -53,12 +53,6 @@ func (b *Board) makeMove(piece *Piece, from, to Pos) {
 	// Increment b.hasMoved for piece.
 	b.hasMoved[piece]++
 
-	// Increment the history move index number.
-	b.moveNum++
-
-	// Add the new move to b.history.
-	b.history = append(b.history, m)
-
 	// If the history's length has already reached b.moveNum, it means
 	// that the previous move was an undo and since this new move will now
 	// create a new forward history, delete any moves after this move in the
@@ -66,6 +60,12 @@ func (b *Board) makeMove(piece *Piece, from, to Pos) {
 	if len(b.history) > b.moveNum {
 		b.history = b.history[:b.moveNum+1]
 	}
+
+	// Increment the history move index number.
+	b.moveNum++
+
+	// Add the new move to b.history.
+	b.history = append(b.history, m)
 
 	// Update who's turn it is.
 	b.turn ^= 1

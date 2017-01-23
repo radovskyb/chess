@@ -49,6 +49,13 @@ func main() {
 			b.Print()
 			continue
 		}
+		if text == "p" {
+			history := b.History()
+			if history != "" {
+				fmt.Println(history)
+			}
+			continue
+		}
 		var loc1, loc2 string
 		switch len(text) {
 		case 4:
