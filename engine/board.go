@@ -23,6 +23,7 @@ var (
 	ErrCastleWithPieceBetween = errors.New("error: castle with pieces between king and rook")
 	ErrCastleMoveThroughCheck = errors.New("error: castle moving king through check")
 	ErrHistoryIsEmpty         = errors.New("error: move history is empty")
+	ErrNoPreviousMove         = errors.New("error: no previous move available")
 )
 
 type Color uint8

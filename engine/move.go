@@ -110,6 +110,13 @@ func (b *Board) UndoMove() error {
 	return nil
 }
 
+func (b *Board) prevMove() (*move, error) {
+	if b.moveNum < 0 {
+		return nil, ErrNoPreviousMove
+	}
+	return b.history[b.moveNum], nil
+}
+
 // TODO: Redo move in history.
 // func (b *Board) RedoMove() error {}
 
@@ -375,8 +382,22 @@ func (b *Board) canEnPassant(piece *Piece, p1, p2 Pos) bool {
 	}
 	pc, ok := b.posToPiece[Pos{p2.X, p1.Y}]
 	if ok && pc.Name == Pawn && pc.Color != piece.Color {
-		// Check if move has happened since en passant available.
-		// Find by checking last history move.
+		// If the previous move on the board is not piece pc
+		// moving from position Pos{p2.X, p1.Y - 2} for white
+		// or Pos{p2.X, p1.Y + 2} for black to it's current
+		// position at Pos{p2.X, p1.Y}, en passant is not allowed.
+		prevMove, err := b.prevMove()
+		if err != nil {
+			return false
+		}
+		d := 1
+		if piece.Color == Black {
+			d = -1
+		}
+		if prevMove.from.X != p2.X || prevMove.to.X != p2.X ||
+			prevMove.from.Y != p1.Y+2*d || prevMove.piece != pc {
+			return false
+		}
 
 		// Pawn can en passant.
 		return true
