@@ -837,6 +837,9 @@ func TestCantCastleIfKingMovesThroughCheck(t *testing.T) {
 func TestEnPassant(t *testing.T) {
 	// Setup moves.
 	// A2A4,A7A6,A4A5,B7B5
+
+	// TODO: Test can only move if in right Y position for color.
+	// TODO: Test can't en passant if causes own color's check.
 }
 
 func TestUndoMove(t *testing.T) {
