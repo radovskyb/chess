@@ -3,31 +3,24 @@ package engine
 import "fmt"
 
 type move struct {
-	piece    *Piece
-	from     Pos
-	to       Pos
-	captured *Piece
+	piece     *Piece
+	from      Pos
+	to        Pos
+	captured  *Piece
+	enPassant bool // whether or not the capture was en passant.
 }
 
-func (b *Board) makeMove(piece *Piece, from, to Pos) {
-	// Create a new move.
-	m := &move{
-		piece:    piece,
-		from:     from,
-		to:       to,
-		captured: b.posToPiece[to],
-	}
-
+func (b *Board) makeMove(m *move) {
 	// Remove the piece from the old position from over here, so it
 	// doesn't block when checking b.moveBlocked below if waiting
 	// to delete when adding piece to position to.
-	delete(b.posToPiece, from)
+	delete(b.posToPiece, m.from)
 
 	// Get the move positions for the piece now at position to.
-	positions := getMovePositions(piece, to)
+	positions := getMovePositions(m.piece, m.to)
 
 	// Get the positions of the opponents king.
-	kingPos := b.kings[piece.Color^1]
+	kingPos := b.kings[m.piece.Color^1]
 
 	// Check if the king's position is found within any of the
 	// move positions for piece at position to.
@@ -35,23 +28,29 @@ func (b *Board) makeMove(piece *Piece, from, to Pos) {
 
 	// If the king's position was found as isn't blocked, it's a check.
 	if found {
-		if !b.moveBlocked(piece, to, kingPos) {
-			b.check[piece.Color^1] = true
+		if !b.moveBlocked(m.piece, m.to, kingPos) {
+			b.check[m.piece.Color^1] = true
 		}
-		b.kingLos[piece.Color^1] = append(b.kingLos[piece.Color^1],
-			piecePos{piece, to})
+		b.kingLos[m.piece.Color^1] = append(b.kingLos[m.piece.Color^1],
+			piecePos{m.piece, m.to})
 	}
 
 	// Move the piece to the new position.
-	b.posToPiece[to] = piece
+	b.posToPiece[m.to] = m.piece
+
+	// If the move is an en passant, delete the captured
+	// piece from the board.
+	if m.enPassant {
+		delete(b.posToPiece, Pos{m.to.X, m.from.Y})
+	}
 
 	// Update current king's position.
-	if piece.Name == King {
-		b.kings[piece.Color] = to
+	if m.piece.Name == King {
+		b.kings[m.piece.Color] = m.to
 	}
 
 	// Increment b.hasMoved for piece.
-	b.hasMoved[piece]++
+	b.hasMoved[m.piece]++
 
 	// If the history's length has already reached b.moveNum, it means
 	// that the previous move was an undo and since this new move will now
@@ -87,7 +86,11 @@ func (b *Board) UndoMove() error {
 
 	// Put anything that was captured, back at position to.
 	if move.captured != nil {
-		b.posToPiece[move.to] = move.captured
+		if move.enPassant {
+			b.posToPiece[Pos{move.to.X, move.from.Y}] = move.captured
+		} else {
+			b.posToPiece[move.to] = move.captured
+		}
 	}
 
 	// Decrement b.hasMoved for move.piece.
@@ -140,8 +143,24 @@ func (b *Board) moveByLocation(loc1, loc2 string) error {
 	if !found {
 		return ErrNoPieceAtPosition
 	}
-	b.makeMove(piece, pos1, pos2)
+	b.makeMove(b.newMove(piece, pos1, pos2, false))
 	return nil
+}
+
+// newMove creates a new move.
+func (b *Board) newMove(piece *Piece, from, to Pos, enPassant bool) *move {
+	m := &move{
+		piece:     piece,
+		from:      from,
+		to:        to,
+		enPassant: enPassant,
+	}
+	if enPassant {
+		m.captured = b.posToPiece[Pos{to.X, from.Y}]
+	} else {
+		m.captured = b.posToPiece[to]
+	}
+	return m
 }
 
 // Move moves a piece on a board from positions p1 to p2.
@@ -173,7 +192,21 @@ func (b *Board) Move(p1, p2 Pos) error {
 	}
 
 	// Make the move on the board.
-	b.makeMove(piece, p1, p2)
+	//
+	// If the move is legal to make and the piece is a pawn
+	// trying to move diagonally, but there's no piece at
+	// position p2, it's an en passant, otherwise make a
+	// normal move.
+	if piece.Name == Pawn && p1.X != p2.X {
+		_, found := b.posToPiece[p2]
+		if found {
+			b.makeMove(b.newMove(piece, p1, p2, false))
+		} else {
+			b.makeMove(b.newMove(piece, p1, p2, true))
+		}
+	} else {
+		b.makeMove(b.newMove(piece, p1, p2, false))
+	}
 
 	// If color's king was in check and the current move
 	// is legal, the king will no longer be in check.
@@ -209,6 +242,14 @@ func (b *Board) moveLegal(piece *Piece, p1, p2 Pos) error {
 		}
 	}
 
+	// If there was no piece at position p2 and the piece is a
+	// pawn trying to move diagonally, if there's no setup for
+	// an en passant, the move is illegal.
+	if !found && piece.Name == Pawn && p1.X != p2.X &&
+		!b.canEnPassant(piece, p1, p2) {
+		return ErrInvalidPieceMove
+	}
+
 	// Check if the move from p1 to p2 is blocked by any other pieces.
 	if b.moveBlocked(piece, p1, p2) {
 		return ErrMoveBlocked
@@ -218,6 +259,37 @@ func (b *Board) moveLegal(piece *Piece, p1, p2 Pos) error {
 	// be moved, unless it evades the current check.
 	//
 	// If not in check, then make sure move doesn't put own king in check.
+	if err := b.moveIntoOrWhileCheck(piece, p1, p2); err != nil {
+		return err
+	}
+
+	// If the piece is a King, see if it can move to p2 without
+	// being put into check.
+	if piece.Name == King {
+		// Remove the king from it's current position on the board
+		// so that it doesn't block any pieces in position attacked.
+		delete(b.posToPiece, p1)
+
+		// Check if the position is being attacked by the opponent's color.
+		attacked := b.positionAttacked(p2, piece.Color^1)
+
+		// Put the king back at position p1.
+		b.posToPiece[p1] = piece
+
+		// If the position is being attacked, the move is illegal
+		// as the king would be moving into a check.
+		if attacked {
+			return ErrMovingIntoCheck
+		}
+	}
+
+	return nil
+}
+
+// moveIntoOrWhileCheck returns an error if moving piece causes the piece's color's
+// king to be in check, or if the king will still be in check if the move does not
+// uncheck the king through capture or blockage.
+func (b *Board) moveIntoOrWhileCheck(piece *Piece, p1, p2 Pos) error {
 	if piece.Name != King {
 		for i, pp := range b.kingLos[piece.Color] {
 			// Check if piece is still at pp.Pos. If it isn't, delete
@@ -287,28 +359,29 @@ func (b *Board) moveLegal(piece *Piece, p1, p2 Pos) error {
 			}
 		}
 	}
+	return nil
+}
 
-	// If the piece is a King, see if it can move to p2 without
-	// being put into check.
-	if piece.Name == King {
-		// Remove the king from it's current position on the board
-		// so that it doesn't block any pieces in position attacked.
-		delete(b.posToPiece, p1)
-
-		// Check if the position is being attacked by the opponent's color.
-		attacked := b.positionAttacked(p2, piece.Color^1)
-
-		// Put the king back at position p1.
-		b.posToPiece[p1] = piece
-
-		// If the position is being attacked, the move is illegal
-		// as the king would be moving into a check.
-		if attacked {
-			return ErrMovingIntoCheck
+func (b *Board) canEnPassant(piece *Piece, p1, p2 Pos) bool {
+	switch piece.Color {
+	case Black:
+		if p1.Y != 3 {
+			return false
+		}
+	case White:
+		if p1.Y != 4 {
+			return false
 		}
 	}
+	pc, ok := b.posToPiece[Pos{p2.X, p1.Y}]
+	if ok && pc.Name == Pawn && pc.Color != piece.Color {
+		// Check if move has happened since en passant available.
+		// Find by checking last history move.
 
-	return nil
+		// Pawn can en passant.
+		return true
+	}
+	return false
 }
 
 // positionAttacked returns a true or false based on whether the
@@ -377,7 +450,6 @@ func (b *Board) moveBlocked(piece *Piece, p1, p2 Pos) bool {
 		if piece.Color == Black {
 			d = -1
 		}
-		// TODO: Fix for En Passant.
 		if p1.X != p2.X {
 			return false
 		}
@@ -472,7 +544,7 @@ func (b *Board) doCastling(king *Piece, p1, p2 Pos) error {
 	//
 	// The history will be able to tell that it was a castling
 	// by which positions the king moved from and where to.
-	b.makeMove(king, p1, p2)
+	b.makeMove(b.newMove(king, p1, p2, false))
 
 	return nil
 }

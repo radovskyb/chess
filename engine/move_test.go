@@ -833,3 +833,14 @@ func TestCantCastleIfKingMovesThroughCheck(t *testing.T) {
 		t.Error("shouldn't be able to castle when king moves through check")
 	}
 }
+
+func TestEnPassant(t *testing.T) {
+	// Setup moves.
+	// A2A4,A7A6,A4A5,B7B5
+}
+
+func TestUndoMove(t *testing.T) {
+	// TODO: Undo normal moves.
+	// TODO: Undo castling.
+	// TODO: Undo en passant.
+}
