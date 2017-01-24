@@ -394,8 +394,8 @@ func (b *Board) canEnPassant(piece *Piece, p1, p2 Pos) bool {
 		if piece.Color == Black {
 			d = -1
 		}
-		if prevMove.from.X != p2.X || prevMove.to.X != p2.X ||
-			prevMove.from.Y != p1.Y+2*d || prevMove.piece != pc {
+		if prevMove.piece != pc || prevMove.from.X != p2.X ||
+			prevMove.to.X != p2.X || prevMove.from.Y != p1.Y+2*d {
 			return false
 		}
 
