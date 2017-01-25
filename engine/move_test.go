@@ -835,15 +835,111 @@ func TestCantCastleIfKingMovesThroughCheck(t *testing.T) {
 }
 
 func TestEnPassant(t *testing.T) {
-	// Setup moves.
-	// A2A4,A7A6,A4A5,B7B5
+	b := NewBoard()
 
-	// TODO: Test can only move if in right Y position for color.
-	// TODO: Test can't en passant if causes own color's check.
+	moves := []struct {
+		from, to string
+	}{
+		{"a2", "a4"},
+		{"a7", "a6"},
+		{"a4", "a5"},
+		{"b7", "b5"},
+	}
+
+	for _, move := range moves {
+		if err := b.MoveByLocation(move.from, move.to); err != nil {
+			t.Fatalf("moving from %s to %s failed: %s",
+				move.from, move.to, err.Error())
+		}
+	}
+
+	// Make sure pawn is at b5.
+	piece, err := b.GetPieceAt("b5")
+	if err != nil {
+		t.Error(err)
+	}
+	if piece.Name != Pawn {
+		t.Error("expected to find pawn at location b5")
+	}
+
+	enPassantFrom, enPassantTo := "a5", "b6"
+	if err := b.MoveByLocation(enPassantFrom, enPassantTo); err != nil {
+		t.Errorf("expected en passant from %s to %s to work",
+			enPassantFrom, enPassantTo)
+	}
+
+	// Make sure pawn at b5 was taken.
+	piece, err = b.GetPieceAt("b5")
+	if err == nil {
+		t.Error("expected there to be no pawn at location b5")
+	}
 }
 
-func TestUndoMove(t *testing.T) {
-	// TODO: Undo normal moves.
-	// TODO: Undo castling.
-	// TODO: Undo en passant.
+func TestCantEnPassantIfNotCorrectPosition(t *testing.T) {
+	b := NewBoard()
+
+	moves := []struct {
+		from, to string
+	}{
+		{"c2", "c4"},
+		{"d7", "d5"},
+		{"c4", "c5"},
+	}
+
+	for _, move := range moves {
+		if err := b.MoveByLocation(move.from, move.to); err != nil {
+			t.Fatalf("moving from %s to %s failed: %s",
+				move.from, move.to, err.Error())
+		}
+	}
+
+	enPassantFrom, enPassantTo := "d5", "c4"
+	if err := b.MoveByLocation(enPassantFrom, enPassantTo); err == nil {
+		t.Errorf("expected en passant from %s to %s not to work",
+			enPassantFrom, enPassantTo)
+	}
+
+	if err := b.MoveByLocation("a7", "a6"); err != nil {
+		t.Fatalf("moving from a7 to a6 failed: %s", err.Error())
+	}
+
+	enPassantFrom, enPassantTo = "c5", "d6"
+	if err := b.MoveByLocation(enPassantFrom, enPassantTo); err == nil {
+		t.Errorf("expected en passant from %s to %s not to work",
+			enPassantFrom, enPassantTo)
+	}
+}
+
+func TestCantEnPassantIfCausesOwnCheck(t *testing.T) {
+	b := NewBoard()
+
+	moves := []struct {
+		from, to string
+	}{
+		{"d2", "d3"},
+		{"d7", "d6"},
+		{"c2", "c4"},
+		{"d8", "d7"},
+		{"c4", "c5"},
+		{"d6", "c5"},
+		{"e1", "d2"},
+		{"a7", "a5"},
+		{"d3", "d4"},
+		{"a5", "a4"},
+		{"d4", "d5"},
+		{"e7", "e5"},
+	}
+
+	for _, move := range moves {
+		if err := b.MoveByLocation(move.from, move.to); err != nil {
+			t.Fatalf("moving from %s to %s failed: %s",
+				move.from, move.to, err.Error())
+		}
+	}
+
+	enPassantFrom, enPassantTo := "d5", "e6" // Causes own king to be in check.
+	if err := b.MoveByLocation(enPassantFrom, enPassantTo); err == nil {
+		t.Errorf("expected en passant from %s to %s not to work",
+			enPassantFrom, enPassantTo)
+	}
 }

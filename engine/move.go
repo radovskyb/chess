@@ -44,9 +44,25 @@ func (b *Board) makeMove(m *move) {
 		delete(b.posToPiece, Pos{m.to.X, m.from.Y})
 	}
 
-	// Update current king's position.
+	// Update current king's position and line of sights.
 	if m.piece.Name == King {
 		b.kings[m.piece.Color] = m.to
+
+		// If the king is moving into any opponents piece's line
+		// of sight, add it to the b.kingLos slice.
+		for pos, piece := range b.posToPiece {
+			if m.piece.Color != piece.Color^1 || (piece.Name == Pawn && pos.X == m.to.X) {
+				continue
+			}
+			positions := getMovePositions(piece, pos)
+			_, found := positions[m.to]
+			// Don't need to check if b.moveBlocked since already checked
+			// in b.moveLegal.
+			if found {
+				b.kingLos[m.piece.Color] = append(b.kingLos[m.piece.Color],
+					piecePos{piece, pos})
+			}
+		}
 	}
 
 	// Increment b.hasMoved for piece.
@@ -69,56 +85,6 @@ func (b *Board) makeMove(m *move) {
 	// Update who's turn it is.
 	b.turn ^= 1
 }
-
-func (b *Board) UndoMove() error {
-	if b.moveNum < 0 {
-		return ErrHistoryIsEmpty
-	}
-
-	// Get the move from b.history at position b.moveNum.
-	move := b.history[b.moveNum]
-
-	// Put the move's piece back to position from.
-	b.posToPiece[move.from] = move.piece
-
-	// Delete the piece from position to.
-	delete(b.posToPiece, move.to)
-
-	// Put anything that was captured, back at position to.
-	if move.captured != nil {
-		if move.enPassant {
-			b.posToPiece[Pos{move.to.X, move.from.Y}] = move.captured
-		} else {
-			b.posToPiece[move.to] = move.captured
-		}
-	}
-
-	// Decrement b.hasMoved for move.piece.
-	b.hasMoved[move.piece]--
-
-	// If piece is a king, set it's position back to from.
-	if move.piece.Name == King {
-		b.kings[move.piece.Color] = move.from
-	}
-
-	// Set the turn to piece's color.
-	b.turn = move.piece.Color
-
-	// Decrement b.moveNum.
-	b.moveNum--
-
-	return nil
-}
-
-func (b *Board) prevMove() (*move, error) {
-	if b.moveNum < 0 {
-		return nil, ErrNoPreviousMove
-	}
-	return b.history[b.moveNum], nil
-}
-
-// TODO: Redo move in history.
-// func (b *Board) RedoMove() error {}
 
 // MoveByLocation is a convenience method that makes a move based
 // 2 location strings instead of Pos objects. For example, a2 to a4.
