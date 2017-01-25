@@ -236,3 +236,58 @@ func TestGetMovePositions(t *testing.T) {
 		}
 	}
 }
+
+func TestPieceContainsPosition(t *testing.T) {
+	b := NewBoard()
+
+	testCases := []struct {
+		p1, p2   Pos
+		contains bool
+	}{
+		// Test some white pieces.
+		{Pos{0, 0}, Pos{2, 2}, false},
+		{Pos{0, 1}, Pos{0, 3}, true},
+		{Pos{1, 0}, Pos{1, 2}, false},
+		{Pos{1, 0}, Pos{2, 2}, true},
+		// Test some black pieces.
+		{Pos{0, 7}, Pos{3, 5}, false},
+		{Pos{0, 6}, Pos{0, 4}, true},
+		{Pos{1, 7}, Pos{1, 5}, false},
+		{Pos{1, 7}, Pos{2, 5}, true},
+	}
+	for _, tc := range testCases {
+		piece, found := b.posToPiece[tc.p1]
+		if !found {
+			t.Errorf("no piece found at pos %v", tc.p1)
+		}
+		positions := getMovePositions(piece, tc.p1)
+		_, contains := positions[tc.p2]
+		if tc.contains && !contains {
+			t.Errorf("expected pos %s to be available for %s at pos %s",
+				tc.p2, piece, tc.p1)
+		}
+		if !tc.contains && contains {
+			t.Errorf("expected pos %s to be unavailable for %s at pos %s",
+				tc.p2, piece, tc.p1)
+		}
+	}
+}
+
+func TestAvailBetween(t *testing.T) {
+	b := NewBoard()
+	b.clear()
+
+	bQ := &Piece{Queen, Black}
+	wK := &Piece{King, White}
+
+	qPos := Pos{7, 3}
+	kPos := Pos{4, 0}
+
+	b.posToPiece[qPos] = bQ
+	b.posToPiece[kPos] = wK
+
+	between := b.availBetween(bQ, qPos, kPos)
+	if len(between) > 2 {
+		t.Error("expected between to only have 2 positions")
+	}
+}

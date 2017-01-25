@@ -128,3 +128,74 @@ func getMovePositions(piece *Piece, cur Pos) map[Pos]struct{} {
 	}
 	return pos
 }
+
+func (b *Board) availBetween(piece *Piece, p1, p2 Pos) map[Pos]struct{} {
+	yd, xd := 1, 1
+	if p1.Y > p2.Y {
+		yd = -1
+	}
+	if p1.X > p2.X {
+		xd = -1
+	}
+	switch piece.Name {
+	case Pawn:
+		d := 1
+		if piece.Color == Black {
+			d = -1
+		}
+		if p1.Y == p2.Y+(2*d) {
+			if _, blocked := b.posToPiece[Pos{p1.X, p1.Y + d}]; blocked {
+				return map[Pos]struct{}{Pos{p1.X, p1.Y + d}: struct{}{}}
+			}
+		}
+	case Rook:
+		return b.lineBetween(p1, p2, xd, yd)
+	case Bishop:
+		return b.diagBetween(p1, p2, xd, yd)
+	case Queen:
+		if p1.Y == p2.Y || p1.X == p2.X {
+			return b.lineBetween(p1, p2, xd, yd)
+		}
+		return b.diagBetween(p1, p2, xd, yd)
+	}
+	return nil
+}
+
+func (b *Board) lineBetween(p1, p2 Pos, xd, yd int) map[Pos]struct{} {
+	m := map[Pos]struct{}{}
+	switch {
+	case p1.Y != p2.Y:
+		for y := p1.Y + yd; y != p2.Y; y = y + yd {
+			_, blocked := b.posToPiece[Pos{p2.X, y}]
+			if !blocked {
+				m[Pos{p2.X, y}] = struct{}{}
+			}
+		}
+	case p1.X != p2.X:
+		for x := p1.X + xd; x != p2.X; x = x + xd {
+			_, blocked := b.posToPiece[Pos{x, p2.Y}]
+			if !blocked {
+				m[Pos{x, p2.Y}] = struct{}{}
+			}
+		}
+	}
+	return m
+}
+
+func (b *Board) diagBetween(p1, p2 Pos, xd, yd int) map[Pos]struct{} {
+	m := map[Pos]struct{}{}
+	for x, y := p1.X+xd, p1.Y+yd; x != p2.X && y != p2.Y; x, y = x+xd, y+yd {
+		_, blocked := b.posToPiece[Pos{x, y}]
+		if !blocked {
+			m[Pos{x, y}] = struct{}{}
+		}
+	}
+	return m
+}
+
+func (b *Board) positionOffBoard(pos Pos) bool {
+	if pos.X < 0 || pos.X > 7 || pos.Y < 0 || pos.Y > 7 {
+		return true
+	}
+	return false
+}

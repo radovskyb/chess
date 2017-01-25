@@ -66,7 +66,7 @@ type Board struct {
 	kings [2]Pos
 
 	// kingLos holds pieces that have a line of sight to a king.
-	kingLos [2][]piecePos
+	kingLos [2]map[piecePos]struct{}
 
 	// history contains a slice of all moves that have occurred
 	// on the board.
@@ -135,7 +135,7 @@ func NewBoard() *Board {
 		turn:       White,
 		posToPiece: posToPiece,
 		kings:      [2]Pos{White: {4, 0}, Black: {4, 7}},
-		kingLos:    [2][]piecePos{White: {}, Black: {}},
+		kingLos:    [2]map[piecePos]struct{}{White: {}, Black: {}},
 		history:    []*move{}, // Create a new blank history.
 		moveNum:    -1,
 		hasMoved:   hasMoved,

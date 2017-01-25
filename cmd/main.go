@@ -14,30 +14,6 @@ func main() {
 	b := engine.NewBoard()
 	b.Print()
 
-	// Animate a 4 move checkmate on the board.
-	// engine.FourMoveCheckmate(b, time.Second)
-
-	// blockageMovesStr1 := "d2d4,e7e5,e1d2,f8b4"
-	// blockageMovesStr2 := "a2a3,e7e5,a3a4,f8b4"
-	// blockageMovesStr3 := "d2d4,e7e5,d4e5,d8e7,e5e6,e7e6a"
-	// blockageMovesStr4 := "d2d4,e7e5,d4e5,d8e7,e5e6,e7e6,e2e4,e6e4,f1e2,f8b4"
-	// setupForCheckStr1 := "e2e3,f7f5,a2a4,e8f7,d1e2,a7a5"
-	// setupForCheckStr2 := "e2e3,e7e5,b2b4,f8b4,a2a3,b4d2"
-	// setupBoardStr1 := "g2g4,a7a5,g4g5,a5a4,g5g6,a4a3"
-	// setupBoardStr2 := "a2a4,a7a5,a1a3,a8a6,a3c3,c7c5"
-	// setupBoardStr3 := "a2a4,d7d5,a1a3,d5d4,a3g3,d4d3"
-	// setupStr1 := "e2e3,e7e5,b2b4,f8b4"
-	// setupStr1 := "e2e3,e7e5,b2b4,f8b4,a2a3,b4d2,e1e2,d7d5" // <- e3e4
-	// setupStr1 := "e2e3,e7e5,b2b4,f8b4,a2a3,b4d2,e1e2,d7d5,g2g4,c8g4" // <- f2f3
-
-	// moves := strings.Split(setupStr1, ",")
-	// for _, move := range moves {
-	// 	if err := b.MoveByLocation(move[0:2], move[2:]); err != nil {
-	// 		log.Fatalln(err)
-	// 	}
-	// }
-	// b.Print()
-
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		text := strings.TrimSpace(scanner.Text())
@@ -76,6 +52,10 @@ func main() {
 		}
 		b.Print()
 		if hasCheck, color := b.HasCheck(); hasCheck {
+			if b.InCheckmate(color) {
+				fmt.Printf("%s is in checkmate\n", color)
+				break
+			}
 			fmt.Printf("%s is in check\n", color)
 		}
 	}

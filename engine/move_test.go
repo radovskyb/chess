@@ -58,39 +58,6 @@ func TestMove(t *testing.T) {
 	}
 }
 
-func TestMoveLegal(t *testing.T) {
-	b := NewBoard()
-
-	testCases := []struct {
-		p1, p2 Pos
-		legal  bool
-	}{
-		// Test some white pieces.
-		{Pos{0, 0}, Pos{0, 3}, false},
-		{Pos{0, 1}, Pos{0, 3}, true},
-		{Pos{1, 0}, Pos{1, 2}, false},
-		{Pos{1, 0}, Pos{2, 2}, true},
-		// Test some black pieces.
-		{Pos{0, 7}, Pos{0, 6}, false},
-		{Pos{0, 6}, Pos{0, 4}, true},
-		{Pos{1, 7}, Pos{1, 5}, false},
-		{Pos{1, 7}, Pos{2, 5}, true},
-	}
-	for _, tc := range testCases {
-		piece, found := b.posToPiece[tc.p1]
-		if !found {
-			t.Errorf("no piece found at pos %v", tc.p1)
-		}
-		err := b.moveLegal(piece, tc.p1, tc.p2)
-		if tc.legal && err != nil {
-			t.Errorf("expected move from pos %v to pos %v be legal", tc.p1, tc.p2)
-		}
-		if !tc.legal && err == nil {
-			t.Errorf("expected move from pos %v to pos %v be illegal", tc.p1, tc.p2)
-		}
-	}
-}
-
 func TestMoveBlocked(t *testing.T) {
 	b := NewBoard()
 
