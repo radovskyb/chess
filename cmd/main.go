@@ -14,18 +14,20 @@ func main() {
 	b := engine.NewBoard()
 	b.Print()
 
+	// engine.FourMoveCheckmate(b, time.Second)
+
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		text := strings.TrimSpace(scanner.Text())
-		if text == "u" {
+		switch text {
+		case "u":
 			if err := b.UndoMove(); err != nil {
 				fmt.Println(err)
 				continue
 			}
 			b.Print()
 			continue
-		}
-		if text == "p" {
+		case "p":
 			history := b.History()
 			if history != "" {
 				fmt.Println(history)
@@ -42,12 +44,12 @@ func main() {
 				loc1, loc2 = locations[0], locations[1]
 			}
 		}
-		if loc1 == "" || loc2 == "" {
-			fmt.Println("allowed formats: l1 l2 or l1l2 (e.g. a2 a4 or a2a4)")
-			continue
-		}
 		if err := b.MoveByLocation(loc1, loc2); err != nil {
-			fmt.Println(err)
+			if err == engine.ErrInvalidLocation {
+				fmt.Println("allowed formats: l1 l2 or l1l2 (e.g. a2 a4 or a2a4)")
+			} else {
+				fmt.Println(err)
+			}
 			continue
 		}
 		b.Print()
@@ -57,6 +59,10 @@ func main() {
 				break
 			}
 			fmt.Printf("%s is in check\n", color)
+		}
+		if b.HasStalemate(b.Turn()) {
+			fmt.Println("stalemate")
+			break
 		}
 	}
 	if err := scanner.Err(); err != nil {

@@ -79,6 +79,10 @@ type Board struct {
 	hasMoved map[*Piece]int
 }
 
+func (b *Board) Turn() Color {
+	return b.turn
+}
+
 // History returns a string combining all of the moves currently
 // stored in the board's history in the format of l1l2,l1l2 etc.
 func (b *Board) History() (history string) {

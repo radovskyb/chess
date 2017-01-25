@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"fmt"
 	"strings"
 	"time"
 )
@@ -16,6 +17,17 @@ func Animate(b *Board, d time.Duration, movesStr string) error {
 		}
 		time.Sleep(d)
 		b.Print()
+		if hasCheck, color := b.HasCheck(); hasCheck {
+			if b.InCheckmate(color) {
+				fmt.Printf("%s is in checkmate\n", color)
+				break
+			}
+			fmt.Printf("%s is in check\n", color)
+		}
+		if b.HasStalemate(b.Turn()) {
+			fmt.Println("stalemate")
+			break
+		}
 	}
 	return nil
 }

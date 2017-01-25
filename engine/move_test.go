@@ -910,3 +910,40 @@ func TestCantEnPassantIfCausesOwnCheck(t *testing.T) {
 			enPassantFrom, enPassantTo)
 	}
 }
+
+func TestHasStalemate(t *testing.T) {
+	b := NewBoard()
+	b.clear()
+
+	b.posToPiece[Pos{5, 6}] = &Piece{King, White}
+	b.posToPiece[Pos{6, 5}] = &Piece{Queen, White}
+	b.posToPiece[Pos{7, 7}] = &Piece{King, Black}
+
+	b.kings[White] = Pos{5, 6}
+	b.kings[Black] = Pos{7, 7}
+
+	b.turn ^= 1
+
+	if !b.HasStalemate(b.turn) {
+		t.Error("expected there to be a stalemate")
+	}
+}
+
+func TestNoStalemateIfCanMove(t *testing.T) {
+	b := NewBoard()
+	b.clear()
+
+	b.posToPiece[Pos{5, 6}] = &Piece{King, White}
+	b.posToPiece[Pos{6, 5}] = &Piece{Queen, White}
+	b.posToPiece[Pos{7, 7}] = &Piece{King, Black}
+	b.posToPiece[Pos{7, 3}] = &Piece{Rook, Black}
+
+	b.kings[White] = Pos{5, 6}
+	b.kings[Black] = Pos{7, 7}
+
+	b.turn ^= 1
+
+	if b.HasStalemate(b.turn) {
+		t.Error("expected there not to be a stalemate")
+	}
+}

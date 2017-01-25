@@ -3,8 +3,7 @@ A chess game written in Go.
 
 # Todo
 - Promotion
-- Stalemate
-- Draw
+- Draw (only kings left)
 - Resign (for cmd)
 - PvP over server
 - GUI

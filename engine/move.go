@@ -209,6 +209,38 @@ func (b *Board) InCheckmate(color Color) bool {
 	return true
 }
 
+func (b *Board) HasStalemate(color Color) bool {
+	// If the king can move, it's not a stalemate.
+	if b.kingCanMove(color) {
+		return false
+	}
+
+	// If any piece can move, it's not a stalemate.
+	if b.anyPieceCanMove(color) {
+		return false
+	}
+
+	return true
+}
+
+func (b *Board) anyPieceCanMove(color Color) bool {
+	for pos, pc := range b.posToPiece {
+		if pc.Color != color || pc.Name == King {
+			continue
+		}
+		// Get all possible positions for piece at pos.
+		positions := getMovePositions(pc, pos)
+		// Iterate over every position that pc can move to and if
+		// pc can move to any position, return true.
+		for p := range positions {
+			if b.moveLegal(pc, pos, p) == nil {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func (b *Board) canStopAllChecks(color Color) bool {
 	// Get all blocking positions between or on the line
 	// of sights and the king for colorq.
