@@ -1,12 +1,13 @@
 package engine
 
-func (b *Board) UndoMove() error {
-	if b.moveNum < 0 {
-		return ErrHistoryIsEmpty
-	}
+import "fmt"
 
-	// Get the move from b.history at position b.moveNum.
-	move := b.history[b.moveNum]
+func (b *Board) UndoMove() error {
+	// Get the previous move from b.history.
+	move, err := b.prevMove()
+	if err != nil {
+		return err
+	}
 
 	// Put the move's piece back to position from.
 	b.posToPiece[move.from] = move.piece
@@ -29,6 +30,33 @@ func (b *Board) UndoMove() error {
 	// If piece is a king, set it's position back to from.
 	if move.piece.Name == King {
 		b.kings[move.piece.Color] = move.from
+
+		// Check if the move was a castling move.
+		//
+		// King side castling.
+		if move.from.X == move.to.X+2 {
+			// Put the rook back to Pos{0, move.to.Y}
+			rook, found := b.posToPiece[Pos{move.to.X + 1, move.to.Y}]
+			if !found {
+				return fmt.Errorf("error: undo castling, rook not found")
+			}
+			b.posToPiece[Pos{0, move.to.Y}] = rook
+
+			// Delete the rook from it's castled position.
+			delete(b.posToPiece, Pos{move.to.X + 1, move.to.Y})
+		}
+		// Queen side castling.
+		if move.from.X == move.to.X-2 {
+			// Put the rook back to Pos{8, move.to.Y}
+			rook, found := b.posToPiece[Pos{move.to.X - 1, move.to.Y}]
+			if !found {
+				return fmt.Errorf("error: undo castling, rook not found")
+			}
+			b.posToPiece[Pos{7, move.to.Y}] = rook
+
+			// Delete the rook from it's castled position.
+			delete(b.posToPiece, Pos{move.to.X - 1, move.to.Y})
+		}
 	}
 
 	// Set the turn to piece's color.
