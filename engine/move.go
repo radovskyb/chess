@@ -100,26 +100,6 @@ func (b *Board) MoveByLocation(loc1, loc2 string) error {
 	return b.Move(pos1, pos2)
 }
 
-// moveByLocation is a convenience function used for setting up
-// boards for testing by moving pieces by locations and also
-// avoiding any checks for move legality.
-func (b *Board) moveByLocation(loc1, loc2 string) error {
-	pos1, err := locToPos(loc1)
-	if err != nil {
-		return err
-	}
-	pos2, err := locToPos(loc2)
-	if err != nil {
-		return err
-	}
-	piece, found := b.posToPiece[pos1]
-	if !found {
-		return ErrNoPieceAtPosition
-	}
-	b.makeMove(b.newMove(piece, pos1, pos2, false))
-	return nil
-}
-
 // newMove creates a new move.
 func (b *Board) newMove(piece *Piece, from, to Pos, enPassant bool) *move {
 	m := &move{

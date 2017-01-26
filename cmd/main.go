@@ -14,8 +14,6 @@ func main() {
 	b := engine.NewBoard()
 	b.Print()
 
-	// engine.FourMoveCheckmate(b, time.Second)
-
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		text := strings.TrimSpace(scanner.Text())
