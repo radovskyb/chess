@@ -2,7 +2,6 @@
 A chess game written in Go.
 
 # Todo
-- Promotion
 - Draw
 - Resign (for cmd)
 - PvP over server
