@@ -23,6 +23,7 @@ var (
 	ErrCastleWithPieceBetween = errors.New("error: castle with pieces between king and rook")
 	ErrCastleMoveThroughCheck = errors.New("error: castle moving king through check")
 	ErrNoPreviousMove         = errors.New("error: no previous move available")
+	ErrKingTooCloseToKing     = errors.New("error: king can't be that close to another king")
 )
 
 type Color uint8

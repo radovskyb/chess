@@ -195,8 +195,8 @@ func (b *Board) Move(p1, p2 Pos) error {
 	return nil
 }
 
-// InCheckmate returns a true or false based on where the color
-// is currently in checkmate or not.
+// InCheckmate returns a true or false based on whether the
+// color is currently in checkmate or not.
 func (b *Board) InCheckmate(color Color) bool {
 	// If the king can move, it's not a checkmate.
 	if b.kingCanMove(color) {
@@ -209,6 +209,8 @@ func (b *Board) InCheckmate(color Color) bool {
 	return true
 }
 
+// HasStalemate checks if there's currently a stalemate on the
+// board.
 func (b *Board) HasStalemate(color Color) bool {
 	// If the king can move, it's not a stalemate.
 	if b.kingCanMove(color) {
@@ -220,6 +222,8 @@ func (b *Board) HasStalemate(color Color) bool {
 		return false
 	}
 
+	// There is a stalemate on the board as color currently
+	// has nowhere legal to move on the board.
 	return true
 }
 
@@ -322,10 +326,15 @@ func (b *Board) canStopAllChecks(color Color) bool {
 	return false
 }
 
+// kingInCheck is a wrapper around b.positionAttacked
+// to see if the king for color's position is currently
+// being attacked which would mean the king is in check.
 func (b *Board) kingInCheck(color Color) bool {
 	return b.positionAttacked(b.kings[color], color^1)
 }
 
+// kingCanMove determines whether the king for color
+// has any positions that it can legally move to or not.
 func (b *Board) kingCanMove(color Color) bool {
 	// Get the positions of the opponent's king.
 	kingPos := b.kings[color]
@@ -334,12 +343,14 @@ func (b *Board) kingCanMove(color Color) bool {
 	// Get the king's potential move positions.
 	kingPositions := getMovePositions(king, kingPos)
 	// If there's any positions that the king can
-	// legally move to, return true.
+	// legally move to, return true since the king
+	// can move.
 	for pos := range kingPositions {
 		if b.moveLegal(king, kingPos, pos) == nil {
 			return true
 		}
 	}
+	// There was no legal moves for the king, return false.
 	return false
 }
 
@@ -392,8 +403,23 @@ func (b *Board) moveLegal(piece *Piece, p1, p2 Pos) error {
 	}
 
 	// If the piece is a King, see if it can move to p2 without
-	// being put into check.
+	// being put into check and also make sure that the opponent's
+	// king is not within 1 X or Y position of position p2.
 	if piece.Name == King {
+		// Get the king's possible move positions from position p2.
+		kingPositions := getMovePositions(piece, p2)
+		// Iterate over all the possible positions from p2 and see if
+		// the opponent's king is in any of those positions.
+		for pos := range kingPositions {
+			if pc, found := b.posToPiece[pos]; found {
+				// The king will be too close to the other king if it
+				// moves to position p2.
+				if pc.Name == King && pc.Color != piece.Color {
+					return ErrKingTooCloseToKing
+				}
+			}
+		}
+
 		// Remove the king from it's current position on the board
 		// so that it doesn't block any pieces in position attacked.
 		delete(b.posToPiece, p1)

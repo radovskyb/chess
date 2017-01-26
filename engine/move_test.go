@@ -911,6 +911,23 @@ func TestCantEnPassantIfCausesOwnCheck(t *testing.T) {
 	}
 }
 
+func TestCantMoveKingWithin1CoordOfKing(t *testing.T) {
+	b := NewBoard()
+	b.clear()
+
+	// Add both kings to the board.
+	b.posToPiece[Pos{5, 6}] = &Piece{King, White}
+	b.posToPiece[Pos{7, 7}] = &Piece{King, Black}
+	b.kings[White] = Pos{5, 6}
+	b.kings[Black] = Pos{7, 7}
+
+	b.turn ^= 1
+
+	if err := b.Move(Pos{7, 7}, Pos{6, 7}); err != ErrKingTooCloseToKing {
+		t.Error("expected ErrKingTooCloseToKing error")
+	}
+}
+
 func TestHasStalemate(t *testing.T) {
 	b := NewBoard()
 	b.clear()
