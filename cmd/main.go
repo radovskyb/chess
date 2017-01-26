@@ -43,6 +43,22 @@ outer:
 				fmt.Println(history)
 			}
 			continue
+		case "q":
+			fmt.Print("are you sure you want to quit? (y/n): ")
+		inner:
+			for scanner.Scan() {
+				text := strings.ToLower(strings.TrimSpace(scanner.Text()))
+				switch {
+				case strings.HasPrefix(text, "y"):
+					return
+				case strings.HasPrefix(text, "n"):
+					break inner
+				default:
+					fmt.Print("are you sure you want to quit? (y/n): ")
+				}
+			}
+			b.Print()
+			continue
 		}
 		var loc1, loc2 string
 		switch len(text) {
