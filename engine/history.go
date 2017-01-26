@@ -59,6 +59,15 @@ func (b *Board) UndoMove() error {
 		}
 	}
 
+	// Set the checks on the board back to the previous move's checks.
+	b.check[White], b.check[Black] = false, false
+	if b.kingInCheck(White) {
+		b.check[White] = true
+	}
+	if b.kingInCheck(Black) {
+		b.check[Black] = true
+	}
+
 	// Set the turn to piece's color.
 	b.turn = move.piece.Color
 

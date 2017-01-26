@@ -78,6 +78,9 @@ type Board struct {
 
 	// hasMoved holds any pieces that have already moved in the game.
 	hasMoved map[*Piece]int
+
+	// mustPromote holds which color needs to promote a pawn.
+	mustPromote [2]bool
 }
 
 func (b *Board) Turn() Color {
@@ -100,6 +103,18 @@ func (b *Board) HasCheck() (bool, Color) {
 		return true, Black
 	}
 	if b.check[White] {
+		return true, White
+	}
+	return false, 2 // 2 for invalid color.
+}
+
+// MustPromote returns true and the color of the side that must
+// promote a pawn or false if no piece currently needs to promote.
+func (b *Board) MustPromote() (bool, Color) {
+	if b.mustPromote[Black] {
+		return true, Black
+	}
+	if b.mustPromote[White] {
 		return true, White
 	}
 	return false, 2 // 2 for invalid color.

@@ -7,7 +7,8 @@ type move struct {
 	from      Pos
 	to        Pos
 	captured  *Piece
-	enPassant bool // whether or not the capture was en passant.
+	enPassant bool   // whether or not the capture was en passant.
+	promotion *Piece // what piece a pawn was promoted to.
 }
 
 func (b *Board) makeMove(m *move) {
@@ -65,6 +66,10 @@ func (b *Board) makeMove(m *move) {
 		b.kingLos[m.piece.Color^1][piecePos{m.piece, m.to}] = struct{}{}
 	}
 
+	if m.piece.Name == Pawn && m.to.Y == 7 || m.to.Y == 0 {
+		b.mustPromote[m.piece.Color] = true
+	}
+
 	// Increment b.hasMoved for piece.
 	b.hasMoved[m.piece]++
 
@@ -84,6 +89,60 @@ func (b *Board) makeMove(m *move) {
 
 	// Update who's turn it is.
 	b.turn ^= 1
+}
+
+// PromotePawn promotes the current pawn on the board that
+// needs to be promoted to the specified piece type.
+func (b *Board) PromotePawn(to PieceName) error {
+	// Get the previous move that just moved and now
+	// needs to promote.
+	move, err := b.prevMove()
+	if err != nil {
+		return err
+	}
+
+	var pc *Piece
+
+	switch to {
+	case Knight:
+		pc = &Piece{Knight, move.piece.Color}
+	case Rook:
+		pc = &Piece{Rook, move.piece.Color}
+	case Bishop:
+		pc = &Piece{Bishop, move.piece.Color}
+	case Queen:
+		pc = &Piece{Queen, move.piece.Color}
+	default:
+		return fmt.Errorf("can't promote pawn to %s", to)
+	}
+
+	// Set the previous move's promotion piece to pc.
+	move.promotion = pc
+
+	// Put the promoted piece where the pawn was located.
+	b.posToPiece[move.to] = pc
+
+	// See if by promoting, the opponent is now in check.
+	if b.kingInCheck(b.turn) {
+		b.check[b.turn] = true
+	}
+
+	// Get the possible move positions for pc at postion move.to.
+	positions := getMovePositions(pc, move.to)
+
+	// See if the opponent's king is within it's line of sight.
+	_, found := positions[b.kings[b.turn]]
+
+	// If it was found, add a piecePos for the new piece at position
+	// move.to to the opponent's king's line of sight.
+	if found {
+		b.kingLos[b.turn][piecePos{pc, move.to}] = struct{}{}
+	}
+
+	// Set must promote for color back to false.
+	b.mustPromote[move.piece.Color] = false
+
+	return nil
 }
 
 // MoveByLocation is a convenience method that makes a move based

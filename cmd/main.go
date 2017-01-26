@@ -15,6 +15,7 @@ func main() {
 	b.Print()
 
 	scanner := bufio.NewScanner(os.Stdin)
+outer:
 	for scanner.Scan() {
 		text := strings.TrimSpace(scanner.Text())
 		switch text {
@@ -24,6 +25,17 @@ func main() {
 				continue
 			}
 			b.Print()
+			if hasCheck, color := b.HasCheck(); hasCheck {
+				if b.InCheckmate(color) {
+					fmt.Printf("%s is in checkmate\n", color)
+					break
+				}
+				fmt.Printf("%s is in check\n", color)
+			}
+			if b.HasStalemate(b.Turn()) {
+				fmt.Println("stalemate")
+				break
+			}
 			continue
 		case "p":
 			history := b.History()
@@ -61,6 +73,43 @@ func main() {
 		if b.HasStalemate(b.Turn()) {
 			fmt.Println("stalemate")
 			break
+		}
+		if mustPromote, _ := b.MustPromote(); mustPromote {
+			fmt.Print("Promote pawn to? (k, r, b, q): ")
+			for scanner.Scan() {
+				text := strings.TrimSpace(scanner.Text())
+				var err error
+				switch text {
+				case "k":
+					err = b.PromotePawn(engine.Knight)
+				case "r":
+					err = b.PromotePawn(engine.Rook)
+				case "b":
+					err = b.PromotePawn(engine.Bishop)
+				case "q":
+					err = b.PromotePawn(engine.Queen)
+				default:
+					fmt.Println("invalid piece, please choose between: k, r, b, q")
+					continue
+				}
+				if err != nil {
+					fmt.Println(err)
+					continue
+				}
+				b.Print()
+				if hasCheck, color := b.HasCheck(); hasCheck {
+					if b.InCheckmate(color) {
+						fmt.Printf("%s is in checkmate\n", color)
+						break outer
+					}
+					fmt.Printf("%s is in check\n", color)
+				}
+				if b.HasStalemate(b.Turn()) {
+					fmt.Println("stalemate")
+					break outer
+				}
+				break
+			}
 		}
 	}
 	if err := scanner.Err(); err != nil {
