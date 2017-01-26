@@ -69,7 +69,6 @@ func getMovePositions(piece *Piece, cur Pos) map[Pos]struct{} {
 
 	switch piece.Name {
 	case Pawn:
-		// TODO: Replace y == 6 or y == 1 logic with if not yet moved.
 		switch piece.Color {
 		case Black:
 			if cur.Y == 6 {

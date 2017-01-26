@@ -145,7 +145,7 @@ func (b *Board) PromotePawn(to PieceName) error {
 	return nil
 }
 
-// MoveByLocation is a convenience method that makes a move based
+// MoveByLocation is a convenience method that makes a move based on
 // 2 location strings instead of Pos objects. For example, a2 to a4.
 func (b *Board) MoveByLocation(loc1, loc2 string) error {
 	pos1, err := locToPos(loc1)
@@ -198,14 +198,13 @@ func (b *Board) Move(p1, p2 Pos) error {
 		return b.doCastling(piece, p1, p2)
 	}
 
-	// Check if the move is legal to make.
-
 	// Make sure that p2 is a valid move position for piece.
 	positions := getMovePositions(piece, p1)
 	if _, ok := positions[p2]; !ok {
 		return ErrInvalidPieceMove
 	}
 
+	// Check if the move is legal to make.
 	if err := b.moveLegal(piece, p1, p2); err != nil {
 		return err
 	}
@@ -266,6 +265,8 @@ func (b *Board) HasStalemate(color Color) bool {
 	return true
 }
 
+// anyPieceCanMove checks to see whether any piece for color
+// can make a legal move on the board or not.
 func (b *Board) anyPieceCanMove(color Color) bool {
 	for pos, pc := range b.posToPiece {
 		if pc.Color != color || pc.Name == King {
@@ -284,6 +285,12 @@ func (b *Board) anyPieceCanMove(color Color) bool {
 	return false
 }
 
+// canStopAllChecks looks to see if any piece for color can legally move
+// to any specific positions on the board that will stop all current checks.
+//
+// canStopAllChecks only tries positions between the pieces that have
+// color's king in their line of sights as well as the actual postions of
+// the piece.
 func (b *Board) canStopAllChecks(color Color) bool {
 	// Get all blocking positions between or on the line
 	// of sights and the king for colorq.
@@ -577,6 +584,8 @@ func (b *Board) moveIntoOrWhileCheck(piece *Piece, p1, p2 Pos) error {
 	return nil
 }
 
+// canEnPassant checks if the pawn at position p1 trying to move
+// to position p2 has the requirements to make an en passant move.
 func (b *Board) canEnPassant(piece *Piece, p1, p2 Pos) bool {
 	switch piece.Color {
 	case Black:
