@@ -1,56 +1,67 @@
 package engine
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+)
 
-type move struct {
-	piece     *Piece
-	from      Pos
-	to        Pos
-	captured  *Piece
-	enPassant bool   // whether or not the capture was en passant.
-	promotion *Piece // what piece a pawn was promoted to.
+type MoveInfo struct {
+	Piece     *Piece `json:"piece"`
+	From      Pos    `json:"from"`
+	To        Pos    `json:"to"`
+	Captured  *Piece `json:"captured"`
+	EnPassant bool   `json:"en_passant"`
+	Promotion *Piece `json:"promotion"`
 }
 
-func (b *Board) makeMove(m *move) {
+func (m *MoveInfo) Encode() ([]byte, error) {
+	return json.Marshal(m)
+}
+
+func (m *MoveInfo) Decode(mInfo []byte) error {
+	return json.Unmarshal(mInfo, m)
+}
+
+func (b *Board) makeMove(m *MoveInfo) {
 	// Remove the piece from the old position from over here, so it
 	// doesn't block when checking b.moveBlocked below if waiting
 	// to delete when adding piece to position to.
-	delete(b.posToPiece, m.from)
+	delete(b.posToPiece, m.From)
 
 	// Move the piece to the new position.
-	b.posToPiece[m.to] = m.piece
+	b.posToPiece[m.To] = m.Piece
 
 	// If the move is an en passant, delete the captured
 	// piece from the board.
-	if m.enPassant {
-		delete(b.posToPiece, Pos{m.to.X, m.from.Y})
+	if m.EnPassant {
+		delete(b.posToPiece, Pos{m.To.X, m.From.Y})
 	}
 
 	// Update current king's position and line of sights.
-	if m.piece.Name == King {
-		b.kings[m.piece.Color] = m.to
+	if m.Piece.Name == King {
+		b.kings[m.Piece.Color] = m.To
 
 		// If the king is moving into any opponent's piece's line
 		// of sight, add it to the b.kingLos slice.
 		for pos, piece := range b.posToPiece {
-			if m.piece.Color != piece.Color^1 || (piece.Name == Pawn && pos.X == m.to.X) {
+			if m.Piece.Color != piece.Color^1 || (piece.Name == Pawn && pos.X == m.To.X) {
 				continue
 			}
 			positions := getMovePositions(piece, pos)
-			_, found := positions[m.to]
+			_, found := positions[m.To]
 			// Don't need to check if b.moveBlocked since already checked
 			// in b.moveLegal.
 			if found {
-				b.kingLos[m.piece.Color][piecePos{piece, pos}] = struct{}{}
+				b.kingLos[m.Piece.Color][piecePos{piece, pos}] = struct{}{}
 			}
 		}
 	}
 
 	// Get the move positions for the piece now at position to.
-	positions := getMovePositions(m.piece, m.to)
+	positions := getMovePositions(m.Piece, m.To)
 
 	// Get the positions of the opponent's king.
-	kingPos := b.kings[m.piece.Color^1]
+	kingPos := b.kings[m.Piece.Color^1]
 
 	// Check if the king's position is found within any of the
 	// move positions for piece at position to.
@@ -60,18 +71,18 @@ func (b *Board) makeMove(m *move) {
 	if found {
 		// If the piece at it's new position is now causing the opponent's
 		// king to be in check, set b.check to true for the color.
-		if !b.moveBlocked(m.piece, m.to, kingPos) {
-			b.check[m.piece.Color^1] = true
+		if !b.moveBlocked(m.Piece, m.To, kingPos) {
+			b.check[m.Piece.Color^1] = true
 		}
-		b.kingLos[m.piece.Color^1][piecePos{m.piece, m.to}] = struct{}{}
+		b.kingLos[m.Piece.Color^1][piecePos{m.Piece, m.To}] = struct{}{}
 	}
 
-	if m.piece.Name == Pawn && m.to.Y == 7 || m.to.Y == 0 {
-		b.mustPromote[m.piece.Color] = true
+	if m.Piece.Name == Pawn && m.To.Y == 7 || m.To.Y == 0 {
+		b.mustPromote[m.Piece.Color] = true
 	}
 
 	// Increment b.hasMoved for piece.
-	b.hasMoved[m.piece]++
+	b.hasMoved[m.Piece]++
 
 	// If the history's length has already reached b.moveNum, it means
 	// that the previous move was an undo and since this new move will now
@@ -105,42 +116,42 @@ func (b *Board) PromotePawn(to PieceName) error {
 
 	switch to {
 	case Knight:
-		pc = &Piece{Knight, move.piece.Color}
+		pc = &Piece{Knight, move.Piece.Color}
 	case Rook:
-		pc = &Piece{Rook, move.piece.Color}
+		pc = &Piece{Rook, move.Piece.Color}
 	case Bishop:
-		pc = &Piece{Bishop, move.piece.Color}
+		pc = &Piece{Bishop, move.Piece.Color}
 	case Queen:
-		pc = &Piece{Queen, move.piece.Color}
+		pc = &Piece{Queen, move.Piece.Color}
 	default:
 		return fmt.Errorf("can't promote pawn to %s", to)
 	}
 
 	// Set the previous move's promotion piece to pc.
-	move.promotion = pc
+	move.Promotion = pc
 
 	// Put the promoted piece where the pawn was located.
-	b.posToPiece[move.to] = pc
+	b.posToPiece[move.To] = pc
 
 	// See if by promoting, the opponent is now in check.
 	if b.kingInCheck(b.turn) {
 		b.check[b.turn] = true
 	}
 
-	// Get the possible move positions for pc at postion move.to.
-	positions := getMovePositions(pc, move.to)
+	// Get the possible move positions for pc at postion move.To.
+	positions := getMovePositions(pc, move.To)
 
 	// See if the opponent's king is within it's line of sight.
 	_, found := positions[b.kings[b.turn]]
 
 	// If it was found, add a piecePos for the new piece at position
-	// move.to to the opponent's king's line of sight.
+	// move.To to the opponent's king's line of sight.
 	if found {
-		b.kingLos[b.turn][piecePos{pc, move.to}] = struct{}{}
+		b.kingLos[b.turn][piecePos{pc, move.To}] = struct{}{}
 	}
 
 	// Set must promote for color back to false.
-	b.mustPromote[move.piece.Color] = false
+	b.mustPromote[move.Piece.Color] = false
 
 	return nil
 }
@@ -160,17 +171,17 @@ func (b *Board) MoveByLocation(loc1, loc2 string) error {
 }
 
 // newMove creates a new move.
-func (b *Board) newMove(piece *Piece, from, to Pos, enPassant bool) *move {
-	m := &move{
-		piece:     piece,
-		from:      from,
-		to:        to,
-		enPassant: enPassant,
+func (b *Board) newMove(piece *Piece, from, to Pos, enPassant bool) *MoveInfo {
+	m := &MoveInfo{
+		Piece:     piece,
+		From:      from,
+		To:        to,
+		EnPassant: enPassant,
 	}
 	if enPassant {
-		m.captured = b.posToPiece[Pos{to.X, from.Y}]
+		m.Captured = b.posToPiece[Pos{to.X, from.Y}]
 	} else {
-		m.captured = b.posToPiece[to]
+		m.Captured = b.posToPiece[to]
 	}
 	return m
 }
@@ -611,8 +622,8 @@ func (b *Board) canEnPassant(piece *Piece, p1, p2 Pos) bool {
 		if piece.Color == Black {
 			d = -1
 		}
-		if prevMove.piece != pc || prevMove.from.X != p2.X ||
-			prevMove.to.X != p2.X || prevMove.from.Y != p1.Y+2*d {
+		if prevMove.Piece != pc || prevMove.From.X != p2.X ||
+			prevMove.To.X != p2.X || prevMove.From.Y != p1.Y+2*d {
 			return false
 		}
 

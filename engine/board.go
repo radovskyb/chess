@@ -71,7 +71,7 @@ type Board struct {
 
 	// history contains a slice of all moves that have occurred
 	// on the board.
-	history []*move
+	history []*MoveInfo
 
 	// moveNum stores the current move index in the history slice.
 	moveNum int
@@ -91,7 +91,7 @@ func (b *Board) Turn() Color {
 // stored in the board's history in the format of l1l2,l1l2 etc.
 func (b *Board) History() (history string) {
 	for _, m := range b.history {
-		history += fmt.Sprintf("%s%s,", m.from, m.to)
+		history += fmt.Sprintf("%s%s,", m.From, m.To)
 	}
 	return strings.TrimRight(history, ",")
 }
@@ -156,7 +156,7 @@ func NewBoard() *Board {
 		posToPiece: posToPiece,
 		kings:      [2]Pos{White: {4, 0}, Black: {4, 7}},
 		kingLos:    [2]map[piecePos]struct{}{White: {}, Black: {}},
-		history:    []*move{}, // Create a new blank history.
+		history:    []*MoveInfo{}, // Create a new blank history.
 		moveNum:    -1,
 		hasMoved:   hasMoved,
 	}
