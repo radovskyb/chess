@@ -85,7 +85,7 @@ func New() *Server {
 	}
 }
 
-// ConnectToGameHandler connects to a game by it's id. It opens a websocket to the client.
+// PlayGameHandler connects to a game by it's id. It opens a websocket to the client.
 func (s *Server) PlayGameHandler(w http.ResponseWriter, r *http.Request) {
 	// Open WebSocket connection and verify authentication for client.
 	c, err := upgrader.Upgrade(w, r, nil)
@@ -147,7 +147,7 @@ func (s *Server) PlayGameHandler(w http.ResponseWriter, r *http.Request) {
 
 	// ========================================
 
-	// If a quit message is recieved, notify the other client and do a cleanup.
+	// If a quit message is received, notify the other client and do a cleanup.
 	// (CLEANUP): Take contents of QuitGameHandler.
 }
 

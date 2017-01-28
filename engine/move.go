@@ -138,7 +138,7 @@ func (b *Board) PromotePawn(to PieceName) error {
 		b.check[b.turn] = true
 	}
 
-	// Get the possible move positions for pc at postion move.To.
+	// Get the possible move positions for pc at position move.To.
 	positions := getMovePositions(pc, move.To)
 
 	// See if the opponent's king is within it's line of sight.
