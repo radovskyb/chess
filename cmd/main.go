@@ -44,17 +44,18 @@ outer:
 			}
 			continue
 		case "q":
-			fmt.Print("are you sure you want to quit? (y/n): ")
 		inner:
-			for scanner.Scan() {
+			for {
+				fmt.Print("are you sure you want to quit? (y/n): ")
+				if !scanner.Scan() {
+					break inner
+				}
 				text := strings.ToLower(strings.TrimSpace(scanner.Text()))
 				switch {
 				case strings.HasPrefix(text, "y"):
 					return
 				case strings.HasPrefix(text, "n"):
 					break inner
-				default:
-					fmt.Print("are you sure you want to quit? (y/n): ")
 				}
 			}
 			b.Print()
