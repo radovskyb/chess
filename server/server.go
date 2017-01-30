@@ -29,7 +29,7 @@ func init() {
 	s := New()
 
 	r.HandleFunc("/new", s.NewGameHandler)
-	r.HandleFunc("/play/{id}/{auth}", s.PlayGameHandler)
+	r.HandleFunc("/play/{id}/{color}/{auth}", s.PlayGameHandler)
 
 	http.Handle("/", r)
 }
@@ -37,9 +37,15 @@ func init() {
 // A game holds a chess board and authentication tokens
 // for both players.
 type game struct {
+	// connected channel notifies when a player joins the game.
+	connected chan struct{}
+
+	// players holds the currently connected player's colors.
+	players map[string]struct{}
+
 	// colors holds authentication tokens for the player
 	// for white and the player for black.
-	colors [2]string
+	colors map[string]string
 
 	// moves is a channel that always holds the info for the last
 	// move that was made and only gets cleared in between when the
@@ -100,7 +106,7 @@ func (s *Server) PlayGameHandler(w http.ResponseWriter, r *http.Request) {
 	// Validate that the game id exists and the client has
 	// correct authentication to play the game.
 	vars := mux.Vars(r)
-	gameId, auth := vars["id"], vars["auth"]
+	gameId, auth, color := vars["id"], vars["auth"], vars["color"]
 
 	// Check that the game id exists.
 	game, found := s.games[gameId]
@@ -109,46 +115,73 @@ func (s *Server) PlayGameHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// If already connected, return.
+	if _, found := game.players[color]; found {
+		c.WriteMessage(websocket.TextMessage, []byte("you are already connected to the game"))
+		return
+	}
+
 	// Check that the auth token exists for either the white or black player.
-	if game.colors[engine.White] != auth ||
-		game.colors[engine.Black] != auth {
+	if game.colors[color] != auth {
 		c.WriteMessage(websocket.TextMessage, []byte(ErrInvalidAuthToken.Error()))
 		return
 	}
 
-	// ========================================
-
-	// If there's only 1 player, wait for a second player to join.
-
-	// ========================================
-
-	// If it's the client's turn, tell the client.
-
-	// ========================================
-
-	// If a move is made, check if it's the right client's turn and if so,
-	// make a move on the game's board and then place the move on the
-	// game's move channel for the client to receive either right now, or
-	// the next time the client reconnects to the game. If it's not the
-	// sending client's turn, send them an error message that it's not their
-	// turn.
+	// Connect the second player.
+	if len(game.players) < 2 {
+		game.connected <- struct{}{}
+	}
+	defer func() {
+		delete(game.players, color)
+	}()
 
 	// ========================================
-
-	// Once the move has been sent to the client, wait for an ack to be received
-	// from the other client, which is to let the server know that their board has
-	// been updated.
-
+	// GAME LOOP
 	// ========================================
+	for {
+		// If there's only 1 player, wait for a second player to join.
+		if len(game.players) < 2 {
+			c.WriteMessage(websocket.TextMessage, []byte("waiting for player to join"))
 
-	// When a client disconnects, if the other client is still connected, send a
-	// signal on a channel so the other client can be notified, otherwise just
-	// return and close the current connection.
+			select {
+			case <-game.connected: // The other play has connected.
+				c.WriteMessage(websocket.TextMessage, []byte("starting game"))
+				break
+			case <-time.After(time.Minute):
+				c.WriteMessage(websocket.TextMessage, []byte("no player joined the game"))
+				return
+			}
+		}
 
-	// ========================================
+		// ========================================
+		// If it's the client's turn, tell the client.
 
-	// If a quit message is received, notify the other client and do a cleanup.
-	// (CLEANUP): Take contents of QuitGameHandler.
+		// ========================================
+
+		// If a move is made, check if it's the right client's turn and if so,
+		// make a move on the game's board and then place the move on the
+		// game's move channel for the client to receive either right now, or
+		// the next time the client reconnects to the game. If it's not the
+		// sending client's turn, send them an error message that it's not their
+		// turn.
+
+		// ========================================
+
+		// Once the move has been sent to the client, wait for an ack to be received
+		// from the other client, which is to let the server know that their board has
+		// been updated.
+
+		// ========================================
+
+		// When a client disconnects, if the other client is still connected, send a
+		// signal on a channel so the other client can be notified, otherwise just
+		// return and close the current connection.
+
+		// ========================================
+
+		// If a quit message is received, notify the other client and do a cleanup.
+		// (CLEANUP): Take contents of QuitGameHandler.
+	}
 }
 
 // NewGameHandler creates a new game in the server's games cache and
@@ -192,7 +225,7 @@ func (s *Server) NewGameHandler(w http.ResponseWriter, r *http.Request) {
 		s.unmatched.Remove(unmatched)
 
 		// Set the auth for black in the game.
-		s.games[gameId].colors[engine.Black] = auth
+		s.games[gameId].colors["black"] = auth
 
 		return
 	}
@@ -209,10 +242,11 @@ func (s *Server) NewGameHandler(w http.ResponseWriter, r *http.Request) {
 	// Add a new game to s.games with the current client being set
 	// to play for white on the board.
 	s.games[id] = &game{
-		colors: [2]string{engine.White: auth},
-		board:  engine.NewBoard(),
-		moves:  make(chan *engine.MoveInfo, 1),
-		turn:   make(chan engine.Color, 1),
+		colors:    map[string]string{"white": auth},
+		board:     engine.NewBoard(),
+		moves:     make(chan *engine.MoveInfo, 1),
+		turn:      make(chan engine.Color, 1),
+		connected: make(chan struct{}, 2),
 	}
 
 	// Add the game to the unmatched list.

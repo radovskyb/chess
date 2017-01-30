@@ -13,19 +13,23 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// Create a new mux router.
-var r = mux.NewRouter()
+func newRouter() *mux.Router {
+	// Create a new mux router.
+	r := mux.NewRouter()
 
-func init() {
 	// Create a new chess server.
 	s := New()
 
 	// Add routes to the router.
 	r.HandleFunc("/new", s.NewGameHandler)
-	r.HandleFunc("/play/{id}/{auth}", s.PlayGameHandler)
+	r.HandleFunc("/play/{id}/{color}/{auth}", s.PlayGameHandler)
+
+	return r
 }
 
 func TestNewGameHandler(t *testing.T) {
+	r := newRouter()
+
 	rr := httptest.NewRecorder()
 	req, err := http.NewRequest("GET", "/new", nil)
 	if err != nil {
@@ -74,7 +78,7 @@ func TestNewGameHandler(t *testing.T) {
 }
 
 func TestConnectWithWrongGameId(t *testing.T) {
-	server := httptest.NewServer(r)
+	server := httptest.NewServer(newRouter())
 	defer server.Close()
 
 	// Create a new game.
@@ -84,7 +88,7 @@ func TestConnectWithWrongGameId(t *testing.T) {
 	}
 	resp.Body.Close()
 
-	path := fmt.Sprint("/play/invalid_game_id/invalid_auth")
+	path := fmt.Sprint("/play/invalid_game_id/white/invalid_auth")
 
 	u := url.URL{
 		Scheme: "ws",
@@ -113,7 +117,7 @@ func TestConnectWithWrongGameId(t *testing.T) {
 }
 
 func TestConnectWithWrongAuthToken(t *testing.T) {
-	server := httptest.NewServer(r)
+	server := httptest.NewServer(newRouter())
 	defer server.Close()
 
 	// Create a new game.
@@ -128,7 +132,7 @@ func TestConnectWithWrongAuthToken(t *testing.T) {
 	}
 
 	parts := strings.Split(string(slurp), ":")
-	path := fmt.Sprintf("/play/%s/invalid_auth_token", parts[0])
+	path := fmt.Sprintf("/play/%s/white/invalid_auth_token", parts[0])
 
 	u := url.URL{
 		Scheme: "ws",
@@ -157,7 +161,7 @@ func TestConnectWithWrongAuthToken(t *testing.T) {
 }
 
 func TestConnectWithCorrectInfoSuccessful(t *testing.T) {
-	server := httptest.NewServer(r)
+	server := httptest.NewServer(newRouter())
 	defer server.Close()
 
 	// Create a new game.
@@ -174,7 +178,7 @@ func TestConnectWithCorrectInfoSuccessful(t *testing.T) {
 	parts := strings.Split(string(slurp), ":")
 	gameId, whiteAuth := parts[0], parts[2]
 
-	path := fmt.Sprintf("/play/%s/%s", gameId, whiteAuth)
+	path := fmt.Sprintf("/play/%s/white/%s", gameId, whiteAuth)
 
 	u := url.URL{
 		Scheme: "ws",
@@ -187,4 +191,107 @@ func TestConnectWithCorrectInfoSuccessful(t *testing.T) {
 		t.Error(err)
 	}
 	defer c.Close()
+}
+
+func connectToGame(server *httptest.Server, t *testing.T) (string, string, *websocket.Conn) {
+	// Create a new game.
+	resp, err := http.Get(server.URL + "/new")
+	if err != nil {
+		t.Error(err)
+	}
+	slurp, err := ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
+	if err != nil {
+		t.Error(err)
+	}
+
+	parts := strings.Split(string(slurp), ":")
+	gameId, color, auth := parts[0], parts[1], parts[2]
+
+	path := fmt.Sprintf("/play/%s/%s/%s", gameId, color, auth)
+
+	u := url.URL{
+		Scheme: "ws",
+		Host:   strings.TrimLeft(server.URL, "http://"),
+		Path:   path,
+	}
+
+	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	if err != nil {
+		t.Error(err)
+	}
+
+	return gameId, auth, c
+}
+
+func TestWaitForSecondPlayerToJoin(t *testing.T) {
+	server := httptest.NewServer(newRouter())
+	defer server.Close()
+
+	_, _, whiteConn := connectToGame(server, t)
+	defer whiteConn.Close()
+
+	mt, msg, err := whiteConn.ReadMessage()
+	if err != nil {
+		t.Error(err)
+	}
+	if mt == websocket.CloseMessage {
+		t.Error("expected text message from websocket, got close message")
+	}
+	if string(msg) != "waiting for player to join" {
+		t.Errorf("expected waiting for player message, got %s", msg)
+	}
+
+	// Connect black to the game.
+	gameId, blackAuth, blackConn := connectToGame(server, t)
+
+	mt, msg, err = whiteConn.ReadMessage()
+	if err != nil {
+		t.Error(err)
+	}
+	if mt == websocket.CloseMessage {
+		t.Error("expected text message from websocket, got close message")
+	}
+	if string(msg) != "starting game" {
+		t.Errorf("expected waiting for player message, got %s", msg)
+	}
+
+	blackConn.Close()
+
+	mt, msg, err = whiteConn.ReadMessage()
+	if err != nil {
+		t.Error(err)
+	}
+	if mt == websocket.CloseMessage {
+		t.Error("expected text message from websocket, got close message")
+	}
+	if string(msg) != "waiting for player to join" {
+		t.Errorf("expected waiting for player message, got %s", msg)
+	}
+
+	// Re-Connect black to the game.
+	path := fmt.Sprintf("/play/%s/black/%s", gameId, blackAuth)
+
+	u := url.URL{
+		Scheme: "ws",
+		Host:   strings.TrimLeft(server.URL, "http://"),
+		Path:   path,
+	}
+
+	blackConn, _, err = websocket.DefaultDialer.Dial(u.String(), nil)
+	if err != nil {
+		t.Error(err)
+	}
+	blackConn.Close()
+
+	mt, msg, err = whiteConn.ReadMessage()
+	if err != nil {
+		t.Error(err)
+	}
+	if mt == websocket.CloseMessage {
+		t.Error("expected text message from websocket, got close message")
+	}
+	if string(msg) != "starting game" {
+		t.Errorf("expected waiting for player message, got %s", msg)
+	}
 }
