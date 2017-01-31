@@ -154,33 +154,38 @@ func (s *Server) PlayGameHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// ========================================
-		// If it's the client's turn, tell the client.
-
+		// Tell the client if it's their turn or not.
 		// ========================================
 
+		// ========================================
 		// If a move is made, check if it's the right client's turn and if so,
 		// make a move on the game's board and then place the move on the
 		// game's move channel for the client to receive either right now, or
 		// the next time the client reconnects to the game. If it's not the
 		// sending client's turn, send them an error message that it's not their
 		// turn.
-
+		//
+		// When making a move, even though there should be client side
+		// validations, make sure that the move is legal and if not,
+		// handle appropriately.
 		// ========================================
 
+		// ========================================
 		// Once the move has been sent to the client, wait for an ack to be received
 		// from the other client, which is to let the server know that their board has
 		// been updated.
-
 		// ========================================
 
+		// ========================================
 		// When a client disconnects, if the other client is still connected, send a
 		// signal on a channel so the other client can be notified, otherwise just
 		// return and close the current connection.
-
 		// ========================================
 
+		// ========================================
 		// If a quit message is received, notify the other client and do a cleanup.
 		// (CLEANUP): Take contents of QuitGameHandler.
+		// ========================================
 	}
 }
 

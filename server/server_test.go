@@ -190,7 +190,7 @@ func TestConnectWithCorrectInfoSuccessful(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	defer c.Close()
+	c.Close()
 }
 
 func connectToGame(server *httptest.Server, t *testing.T) (string, string, *websocket.Conn) {
