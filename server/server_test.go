@@ -253,7 +253,7 @@ func TestWaitForSecondPlayerToJoin(t *testing.T) {
 		t.Error("expected text message from websocket, got close message")
 	}
 	if string(msg) != "starting game" {
-		t.Errorf("expected waiting for player message, got %s", msg)
+		t.Errorf("expected starting game message, got %s", msg)
 	}
 
 	blackConn.Close()
@@ -292,6 +292,6 @@ func TestWaitForSecondPlayerToJoin(t *testing.T) {
 		t.Error("expected text message from websocket, got close message")
 	}
 	if string(msg) != "starting game" {
-		t.Errorf("expected waiting for player message, got %s", msg)
+		t.Errorf("expected starting game message, got %s", msg)
 	}
 }
