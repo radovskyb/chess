@@ -228,9 +228,11 @@ func TestWaitForSecondPlayerToJoin(t *testing.T) {
 	server := httptest.NewServer(newRouter())
 	defer server.Close()
 
+	// Connect white to the game.
 	_, _, whiteConn := connectToGame(server, t)
 	defer whiteConn.Close()
 
+	// Read a message from the ws.
 	mt, msg, err := whiteConn.ReadMessage()
 	if err != nil {
 		t.Error(err)
@@ -244,7 +246,9 @@ func TestWaitForSecondPlayerToJoin(t *testing.T) {
 
 	// Connect black to the game.
 	gameId, blackAuth, blackConn := connectToGame(server, t)
+	// _, _, blackConn := connectToGame(server, t)
 
+	// Read another message for white from the ws.
 	mt, msg, err = whiteConn.ReadMessage()
 	if err != nil {
 		t.Error(err)
@@ -256,8 +260,12 @@ func TestWaitForSecondPlayerToJoin(t *testing.T) {
 		t.Errorf("expected starting game message, got %s", msg)
 	}
 
-	blackConn.Close()
+	// Close black's connection.
+	if err := blackConn.Close(); err != nil {
+		t.Error(err)
+	}
 
+	// Read from white's ws connection again.
 	mt, msg, err = whiteConn.ReadMessage()
 	if err != nil {
 		t.Error(err)
@@ -282,7 +290,9 @@ func TestWaitForSecondPlayerToJoin(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	blackConn.Close()
+	if err := blackConn.Close(); err != nil {
+		t.Error(err)
+	}
 
 	mt, msg, err = whiteConn.ReadMessage()
 	if err != nil {

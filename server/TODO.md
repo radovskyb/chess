@@ -1,0 +1,3 @@
+- fix race conditions on server
+- add disconnect channel
+- maybe restructure?
