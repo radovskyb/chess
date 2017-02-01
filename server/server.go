@@ -22,8 +22,7 @@ var (
 
 var upgrader = websocket.Upgrader{}
 
-func init() {
-	// Create a new mux router.
+func GetRouter() *mux.Router {
 	r := mux.NewRouter()
 
 	s := New()
@@ -31,7 +30,7 @@ func init() {
 	r.HandleFunc("/new", s.NewGameHandler)
 	r.HandleFunc("/play/{id}/{color}/{auth}", s.PlayGameHandler)
 
-	http.Handle("/", r)
+	return r
 }
 
 // A game holds a chess board and authentication tokens
@@ -96,7 +95,6 @@ func (s *Server) PlayGameHandler(w http.ResponseWriter, r *http.Request) {
 	// Open WebSocket connection and verify authentication for client.
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer c.Close()
