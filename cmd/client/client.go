@@ -26,7 +26,6 @@ func NewGame() (string, string, string, error) {
 	if err != nil {
 		return "", "", "", err
 	}
-
 	parts := strings.Split(string(slurp), ":")
 	return parts[0], parts[1], parts[2], nil
 }
