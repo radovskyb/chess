@@ -1,12 +1,12 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 
 	"github.com/gorilla/websocket"
@@ -48,12 +48,22 @@ func ConnectToGame(gameId, color, auth string) (*websocket.Conn, error) {
 }
 
 func main() {
-	// Create a new game.
-	gameId, color, auth, err := NewGame()
-	if err != nil {
-		log.Fatalln(err)
+	info := flag.String("info", "", "info to connect with")
+	flag.Parse()
+
+	var err error
+	var gameId, color, auth string
+	if *info == "" {
+		// Create a new game.
+		gameId, color, auth, err = NewGame()
+		if err != nil {
+			log.Fatalln(err)
+		}
+		fmt.Println(gameId, color, auth)
+	} else {
+		parts := strings.Split(strings.TrimSpace(*info), " ")
+		gameId, color, auth = parts[0], parts[1], parts[2]
 	}
-	fmt.Println(gameId, color, auth)
 
 	conn, err := ConnectToGame(gameId, color, auth)
 	if err != nil {
@@ -64,8 +74,7 @@ func main() {
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			return
+			log.Fatalln(err)
 		}
 		fmt.Println(string(msg))
 	}
