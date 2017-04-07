@@ -146,7 +146,7 @@ func NewBoard() *Board {
 		posToPiece[Pos{i, 1}] = &Piece{Pawn, White}
 		posToPiece[Pos{i, 6}] = &Piece{Pawn, Black}
 	}
-	// Create and initalize a new map for b.hasMoved.
+	// Create and initialize a new map for b.hasMoved.
 	hasMoved := make(map[*Piece]int)
 	for _, piece := range posToPiece {
 		hasMoved[piece] = 0

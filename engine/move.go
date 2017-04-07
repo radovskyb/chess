@@ -304,7 +304,7 @@ func (b *Board) anyPieceCanMove(color Color) bool {
 // the piece.
 func (b *Board) canStopAllChecks(color Color) bool {
 	// Get all blocking positions between or on the line
-	// of sights and the king for colorq.
+	// of sights and the king for color.
 	betweenOrOn := make(map[Pos]struct{})
 
 	// Iterate over all pieces in king's line of sight.
